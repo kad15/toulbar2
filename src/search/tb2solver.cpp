@@ -2130,13 +2130,26 @@ bool Solver::solve()
                             }
                         } else {
                             initialDepth = Store::getDepth();
-                            try {
-                                if (ToulBar2::isZ)
-                                    hybridCounting(ToulBar2::GlobalLogLbZ, ToulBar2::GlobalLogUbZ);
-                                else
-                                    hybridSolve();
-                            } catch (FindNewSequence) {
-                            }
+                            int initialDepth_cpy = initialDepth;
+                            Cost initialUb = wcsp->getUb();
+                            bool incrementalSearch = false;
+
+                            do {
+                                wcsp->setUb(initialUb); // (re)start search with initial upper bound
+                                Store::store(); // protect the current CFN from changes by search or new cost functions
+                                // may be some cost functions do not need to be "undone" (distance constraits) and they could be posted traditionally before the Store:store()
+                                // Simple trial. Will have 2 boolean variables
+                                vector<Cost> vc{ 2, 1, 2, 1 };
+                                wcsp->postIncrementalBinaryConstraint(0, 1, vc); // add your incremental constraint here NOT using WCSP post functions but the extra pool of binary constraints
+                                wcsp->propagate();
+                                try {
+                                    if (ToulBar2::isZ)
+                                        hybridCounting(ToulBar2::GlobalLogLbZ, ToulBar2::GlobalLogUbZ);
+                                    else
+                                        hybridSolve();
+                                } catch (FindNewSequence) {
+                                }
+                            } while (true);
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
                                 ((Jobs*)ToulBar2::jobs)->send_results(wcsp->getUb());

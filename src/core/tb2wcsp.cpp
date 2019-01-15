@@ -896,6 +896,32 @@ void WCSP::postNaryConstraintEnd(int ctrindex)
         ctr->propagate();
 }
 
+// Add a temporary (backtrackable) binary constraint for incremental search (à la "on the fly ElimVar")
+void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs)
+{
+    EnumeratedVariable* z = (EnumeratedVariable*)getVar(zIndex);
+    EnumeratedVariable* y = (EnumeratedVariable*)getVar(yIndex);
+    BinaryConstraint* yz = y->getConstr(z);
+
+    initElimConstr();
+    BinaryConstraint* yznew = newBinaryConstr(y, z, NULL, NULL);
+    elimBinOrderInc();
+    for (auto itery = y->begin(); itery != y->end(); ++itery) {
+        for (auto iterz = z->begin(); iterz != z->end(); ++iterz) {
+            yznew->setcost(*itery, *iterz, costs[y->toIndex(*itery) * y->getDomainInitSize() + z->toIndex(*iterz)]);
+        }
+    }
+    if (yz) {
+        yz->addCosts(yznew);
+        if (y->unassigned() && z->unassigned())
+            yz->reconnect();
+    } else {
+        yz = yznew;
+        yz->reconnect();
+    }
+    yz->propagate();
+}
+
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)
 {
 #ifndef NDEBUG

@@ -219,13 +219,14 @@ public:
     virtual int postNaryConstraintBegin(int* scope, int arity, Cost defval, Long nbtuples = 0) = 0; /// \warning must call WeightedCSP::postNaryConstraintEnd after giving cost tuples
     virtual void postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost cost) = 0;
     virtual void postNaryConstraintEnd(int ctrindex) = 0; /// \warning must call WeightedCSP::sortConstraints after all cost functions have been posted (see WeightedCSP::sortConstraints)
+    virtual void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs) = 0;
     virtual int postUnary(int xIndex, Value* d, int dsize, Cost penalty) = 0; ///< \deprecated Please use the postUnaryConstraint method instead
     virtual int postUnaryConstraint(int xIndex, Value* d, int dsize, Cost penalty) = 0;
     virtual int postSupxyc(int xIndex, int yIndex, Value cst, Value deltamax = MAX_VAL - MIN_VAL) = 0;
     virtual int postDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Cost penalty) = 0;
     virtual int postSpecialDisjunction(int xIndex, int yIndex, Value cstx, Value csty, Value xinfty, Value yinfty, Cost costx, Cost costy) = 0;
 
-    virtual int postCliqueConstraint(int* scopeIndex, int arity, istream &file) =0;
+    virtual int postCliqueConstraint(int* scopeIndex, int arity, istream& file) = 0;
 
     virtual int postGlobalConstraint(int* scopeIndex, int arity, const string& gcname, istream& file, int* constrcounter = NULL, bool mult = true) = 0; ///< \deprecated Please use the postWxxx methods instead
 

@@ -386,8 +386,12 @@ public:
     void postNaryConstraintTuple(int ctrindex, Value* tuple, int arity, Cost cost);
     void postNaryConstraintTuple(int ctrindex, const String& tuple, Cost cost);
     void postNaryConstraintEnd(int ctrindex);
+    // -----------------------------------------------------------
+    // Method for incremental solving
+    // -----------------------------------------------------------
+    void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs);
 
-    int postCliqueConstraint(int* scopeIndex, int arity, istream &file);
+    int postCliqueConstraint(int* scopeIndex, int arity, istream& file);
 
     int postGlobalConstraint(int* scopeIndex, int arity, const string& gcname, istream& file, int* constrcounter = NULL, bool mult = true); ///< \deprecated should use WCSP::postGlobalCostFunction instead \warning does not work for arity below 4 (use binary or ternary cost functions instead)
 
@@ -449,8 +453,9 @@ public:
         solutionCost = cost;
         for (unsigned int i = 0; i < numberOfVariables(); i++) {
             Value v = ((sol != NULL) ? (*sol)[i] : getValue(i));
-            if (!ToulBar2::verifyOpt && ToulBar2::solutionBasedPhaseSaving) setBestValue(i, v);
-            solution[i] = ((ToulBar2::sortDomains && ToulBar2::sortedDomains.find(i) != ToulBar2::sortedDomains.end()) ? ToulBar2::sortedDomains[i][toIndex(i,v)].value : v);
+            if (!ToulBar2::verifyOpt && ToulBar2::solutionBasedPhaseSaving)
+                setBestValue(i, v);
+            solution[i] = ((ToulBar2::sortDomains && ToulBar2::sortedDomains.find(i) != ToulBar2::sortedDomains.end()) ? ToulBar2::sortedDomains[i][toIndex(i, v)].value : v);
         }
     }
 
