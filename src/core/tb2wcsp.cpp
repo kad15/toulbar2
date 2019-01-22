@@ -908,7 +908,7 @@ void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>&
     elimBinOrderInc();
     for (auto itery = y->begin(); itery != y->end(); ++itery) {
         for (auto iterz = z->begin(); iterz != z->end(); ++iterz) {
-            yznew->setcost(*itery, *iterz, costs[y->toIndex(*itery) * y->getDomainInitSize() + z->toIndex(*iterz)]);
+            yznew->setcost(*itery, *iterz, costs[y->toIndex(*itery) * z->getDomainInitSize() + z->toIndex(*iterz)]);
         }
     }
     if (yz) {
@@ -920,6 +920,46 @@ void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>&
         yz->reconnect();
     }
     yz->propagate();
+}
+
+// Add a temporary (backtrackable) ternary constraint for incremental search (à la "on the fly ElimVar")
+void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs)
+{
+    BinaryConstraint* bctr;
+    TernaryConstraint* xyz = new TernaryConstraint(this);
+    elimTernConstrs.push_back(xyz);
+    for (int j = 0; j < 3; j++) {
+        if (!ToulBar2::vac)
+            bctr = new BinaryConstraint(this);
+        else
+            bctr = new VACBinaryConstraint(this);
+        elimBinConstrs.push_back(bctr);
+    }
+
+    EnumeratedVariable* z = (EnumeratedVariable*)getVar(zIndex);
+    EnumeratedVariable* y = (EnumeratedVariable*)getVar(yIndex);
+    EnumeratedVariable* x = (EnumeratedVariable*)getVar(xIndex);
+
+    xyz = newTernaryConstr(x, y, z);
+    elimTernOrderInc();
+    for (EnumeratedVariable::iterator iterx = x->begin(); iterx != x->end(); ++iterx) {
+        for (EnumeratedVariable::iterator itery = y->begin(); itery != y->end(); ++itery) {
+            for (EnumeratedVariable::iterator iterz = z->begin(); iterz != z->end(); ++iterz) {
+                xyz->setcost(*iterx, *itery, *iterz, costs[x->toIndex(*iterx) * y->getDomainInitSize() * z->getDomainInitSize() + y->toIndex(*itery) * z->getDomainInitSize() + z->toIndex(*iterz)]);
+            }
+        }
+    }
+
+    TernaryConstraint* ctr = x->getConstr(y, z);
+    if (!ctr) {
+        xyz->fillElimConstrBinaries();
+        xyz->reconnect();
+    } else {
+        ctr->addCosts(xyz);
+        assert(ctr->connected());
+        xyz = ctr;
+    }
+    xyz->propagate();
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)

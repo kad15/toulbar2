@@ -2132,24 +2132,41 @@ bool Solver::solve()
                             initialDepth = Store::getDepth();
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
-                            bool incrementalSearch = false;
+                            bool incrementalSearch = true;
 
                             do {
                                 wcsp->setUb(initialUb); // (re)start search with initial upper bound
+                                // Here one can add "permanent cost functions"
+                                // Simple trial. Will have 3 boolean variables
+                                vector<Cost> vc1{ 1, 3, 1, 3 };
+                                wcsp->postIncrementalBinaryConstraint(0, 1, vc1); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
+                                vector<Cost> vc3{ 1, 3, 1, 3, 1, 3, 1, 3 };
+                                wcsp->postIncrementalTernaryConstraint(0, 1, 2, vc3); // add incremental constraint here using the extra pool of ternary constraints (used for OTF elimination)
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                // may be some cost functions do not need to be "undone" (distance constraits) and they could be posted traditionally before the Store:store()
-                                // Simple trial. Will have 2 boolean variables
-                                vector<Cost> vc{ 2, 1, 2, 1 };
-                                wcsp->postIncrementalBinaryConstraint(0, 1, vc); // add your incremental constraint here NOT using WCSP post functions but the extra pool of binary constraints
+                                // may be some cost functions do not need to be "undone" (distance constraints) and they could be posted traditionally before the Store:store()
+                                vector<Cost> vc2{ 2, 1, 2, 1 };
+                                wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
+                                vector<Cost> vcu{ 0, 1 };
+                                wcsp->postIncrementalUnaryConstraint(0, vcu);
                                 wcsp->propagate();
                                 try {
-                                    if (ToulBar2::isZ)
-                                        hybridCounting(ToulBar2::GlobalLogLbZ, ToulBar2::GlobalLogUbZ);
-                                    else
-                                        hybridSolve();
+                                    try {
+                                        if (ToulBar2::isZ)
+                                            hybridCounting(ToulBar2::GlobalLogLbZ, ToulBar2::GlobalLogUbZ);
+                                        else
+                                            hybridSolve();
+                                    } catch (Contradiction) {
+                                        wcsp->whenContradiction();
+                                    }
+                                    if (wcsp->getUb() < initialUb) {
+                                        cout << "Found a solution" << endl;
+                                    } else {
+                                        cout << "No solution " << endl;
+                                    }
                                 } catch (FindNewSequence) {
                                 }
-                            } while (true);
+                                Store::restore(initialDepth_cpy); // undo search
+                            } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
                                 ((Jobs*)ToulBar2::jobs)->send_results(wcsp->getUb());

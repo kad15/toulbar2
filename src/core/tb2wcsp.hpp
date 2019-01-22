@@ -389,7 +389,10 @@ public:
     // -----------------------------------------------------------
     // Method for incremental solving
     // -----------------------------------------------------------
+
+    void postIncrementalUnaryConstraint(int xIndex, vector<Cost>& costs) { postUnary(xIndex, costs); }
     void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs);
+    void postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs);
 
     int postCliqueConstraint(int* scopeIndex, int arity, istream& file);
 
