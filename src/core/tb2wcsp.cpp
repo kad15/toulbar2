@@ -156,6 +156,10 @@ unsigned int ToulBar2::decimalPoint;
 string ToulBar2::deltaUbS;
 Cost ToulBar2::deltaUb;
 
+unsigned int ToulBar2::divNbSol;
+vector<Cost> ToulBar2::divMat;
+unsigned int ToulBar2::divBound;
+Cost ToulBar2::divCost;
 BEP* ToulBar2::bep;
 bool ToulBar2::wcnf;
 bool ToulBar2::qpbo;
@@ -334,6 +338,11 @@ void tb2init()
     ToulBar2::decimalPoint = 0;
     ToulBar2::deltaUbS = "";
     ToulBar2::deltaUb = MIN_COST;
+
+    ToulBar2::divNbSol = 1;
+    //    ToulBar2::divMat = NULL;
+    ToulBar2::divBound = 1;
+    ToulBar2::divCost = MIN_COST;
 
     ToulBar2::bep = NULL;
     ToulBar2::wcnf = false;

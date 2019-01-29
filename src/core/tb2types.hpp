@@ -500,6 +500,12 @@ public:
     static unsigned int decimalPoint;
     static string deltaUbS;
     static Cost deltaUb;
+
+    static unsigned int divNbSol;
+    static vector<Cost> divMat;
+    static unsigned int divBound;
+    static Cost divCost;
+
     static bool singletonConsistency;
     static bool vacValueHeuristic;
     static BEP* bep;
