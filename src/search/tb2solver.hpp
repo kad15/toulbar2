@@ -139,6 +139,28 @@ public:
         priority_queue::container_type::iterator end() { return c.end(); }
     };
 
+    class SolutionTrie {
+
+        class TrieNode {
+        public:
+            TrieNode();
+            ~TrieNode();
+            void insert_solution();
+            vector<TrieNode*> sons;
+            void insertNode(Value v);
+            static size_t nbSolutions;
+        };
+
+    public:
+        void init(Value w) { width = w; root.sons.clear(); };
+        void insertSolution();
+        size_t getNbSolutions() { return root.nbSolutions; };
+        unsigned int width;
+
+        private:
+            TrieNode root;
+    };
+
     typedef enum {
         CP_ASSIGN = 0,
         CP_REMOVE = 1,
@@ -230,6 +252,7 @@ protected:
     void showGap(Cost newlb, Cost newub);
     void showZGap();
 
+    SolutionTrie solTrie;
     // Heuristics and search methods
     /// \warning hidden feature: do not branch on variable indexes from ToulBar2::nbDecisionVars to the last variable
     void initVarHeuristic();

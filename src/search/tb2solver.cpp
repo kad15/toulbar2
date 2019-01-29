@@ -2137,13 +2137,11 @@ bool Solver::solve()
                             do {
                                 wcsp->setUb(initialUb); // (re)start search with initial upper bound
                                 // Here one can add "permanent cost functions"
-                                // Simple trial. Will have 3 boolean variables
                                 vector<Cost> vc1{ 1, 3, 1, 3 };
                                 wcsp->postIncrementalBinaryConstraint(0, 1, vc1); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
                                 vector<Cost> vc3{ 1, 3, 1, 3, 1, 3, 1, 3 };
                                 wcsp->postIncrementalTernaryConstraint(0, 1, 2, vc3); // add incremental constraint here using the extra pool of ternary constraints (used for OTF elimination)
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                // may be some cost functions do not need to be "undone" (distance constraints) and they could be posted traditionally before the Store:store()
                                 vector<Cost> vc2{ 2, 1, 2, 1 };
                                 wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
                                 vector<Cost> vcu{ 0, 1 };
@@ -2166,6 +2164,8 @@ bool Solver::solve()
                                 } catch (FindNewSequence) {
                                 }
                                 Store::restore(initialDepth_cpy); // undo search
+                                solTrie.insertSolution();
+
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
@@ -2634,6 +2634,18 @@ void Solver::restore(CPStore& cp, OpenNode nd)
     }
     wcsp->propagate();
     //if (wcsp->getLb() != nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST))) cout << "***** node cost: " << nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST)) << " but lb: " << wcsp->getLb() << endl;
+}
+
+Solver::SolutionTrie::TrieNode::TrieNode() {
+
+}
+
+Solver::SolutionTrie::TrieNode::~TrieNode() {
+
+}
+
+void Solver::SolutionTrie::insertSolution(){
+
 }
 
 /* Local Variables: */

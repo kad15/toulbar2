@@ -43,8 +43,6 @@ class WCSP FINAL : public WeightedCSP {
     StoreCost negCost; ///< shifting value to be added to problem lowerbound when computing the partition function
     vector<Variable*> vars; ///< list of all variables
     vector<Value> bestValues; ///< hint for some value ordering heuristics (ONLY used by RDS)
-    vector<Value> solution; ///< remember last solution found
-    Cost solutionCost; ///< and its cost
     vector<Constraint*> constrs; ///< list of original cost functions
     int NCBucketSize; ///< number of buckets for NC bucket sort
     vector<VariableList> NCBuckets; ///< NC buckets: vector of backtrackable lists of variables
@@ -100,6 +98,9 @@ public:
             return (meancost) > (a.meancost);
         }
     };
+
+    vector<Value> solution; ///< remember last solution found
+    Cost solutionCost; ///< and its cost
 
     StoreInt elimOrder; ///< current number of eliminated variables
     vector<elimInfo> elimInfos; ///< variable elimination information used in backward phase to get a solution

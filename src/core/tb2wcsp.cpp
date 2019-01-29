@@ -340,7 +340,7 @@ void tb2init()
     ToulBar2::deltaUb = MIN_COST;
 
     ToulBar2::divNbSol = 1;
-    //    ToulBar2::divMat = NULL;
+    //  ToulBar2::divMat ;
     ToulBar2::divBound = 1;
     ToulBar2::divCost = MIN_COST;
 
@@ -587,7 +587,6 @@ WCSP::WCSP(Cost upperBound, void* _solver_)
     , lb(MIN_COST)
     , ub(upperBound)
     , negCost(MIN_COST)
-    , solutionCost(MAX_COST)
     , NCBucketSize(cost2log2gub(upperBound) + 1)
     , NCBuckets(NCBucketSize, VariableList(&Store::storeVariable))
     , PendingSeparator(&Store::storeSeparator)
@@ -605,6 +604,7 @@ WCSP::WCSP(Cost upperBound, void* _solver_)
     ,
 #endif
     isPartOfOptimalSolution(0)
+    , solutionCost(MAX_COST)
     , elimOrder(0)
     , elimBinOrder(0)
     , elimTernOrder(0)
