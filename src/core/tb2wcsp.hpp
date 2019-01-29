@@ -395,6 +395,7 @@ public:
     void postIncrementalUnaryConstraint(int xIndex, vector<Cost>& costs) { postUnary(xIndex, costs); }
     void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs);
     void postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs);
+    void addDivConstraint(vector<Value> solution, int sol_id, Cost cost); // to look for the (j+1)-th solution, with j = sol_id
 
     int postCliqueConstraint(int* scopeIndex, int arity, istream& file);
 

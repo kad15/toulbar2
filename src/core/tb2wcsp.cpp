@@ -971,6 +971,65 @@ void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, 
     xyz->propagate();
 }
 
+void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
+{
+    // get solution (vector<Value> from Trie)
+    // add diversity constraint from solution sol_id
+    vector<Cost> vc;
+    bool first_pos = true;
+    EnumeratedVariable* cp;
+    int cpId;
+    for (Variable* x : divVariables) {
+        // Add constraint between x and c_j_x
+        int xId = x->getCurrentVarId(); //index of variable x
+        int cId = divVarsId[sol_id][xId]; //index of variable c
+        Variable* c = getVar(cId);
+        vc.resize(0);
+        for (unsigned val_x = 0; val_x < x->getDomainSize(); val_x++) {
+            for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
+                // val_c = delta(divBound+1) + qp
+                int delta = val_c / (ToulBar2::divBound + 1);
+                if ((val_x != solution[xId]) == delta) {
+                    vc.push_back(MIN_COST);
+                } else {
+                    vc.push_back(cost);
+                }
+            }
+        }
+        postIncrementalBinaryConstraint(xId, cId, vc);
+        // Add constraint between c_j_x and c_j_x-1
+        vc.resize(0);
+        if (first_pos) {
+            for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
+                if ((val_c % (ToulBar2::divBound)) == 0) {
+                    vc.push_back(0);
+                } else {
+                    vc.push_back(cost);
+                }
+            }
+            postIncrementalUnaryConstraint(cId, vc);
+            first_pos = false;
+        } else {
+            // add binary constraint between cp and c
+            for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
+                for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c) {
+                    int deltap = val_cp / (ToulBar2::divBound + 1);
+                    int qp = val_cp % (ToulBar2::divBound + 1);
+                    int q = val_c % (ToulBar2::divBound + 1);
+                    if (q == min(qp + deltap, ToulBar2::divBound)) {
+                        vc.push_back(0);
+                    } else {
+                        vc.push_back(cost);
+                    }
+                }
+            }
+            postIncrementalBinaryConstraint(cpId, cId, vc);
+        }
+        cp = c;
+        cpId = cId;
+    }
+}
+
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)
 {
 #ifndef NDEBUG
