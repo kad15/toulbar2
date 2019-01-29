@@ -149,6 +149,7 @@ public:
             vector<TrieNode*> sons;
             void insertNode(Value v);
             bool present(Value v);
+            void printTrie(vector<Value> &sol);
             static size_t nbSolutions;
             static Value width;
         };
@@ -158,6 +159,7 @@ public:
         ~SolutionTrie() {};
         void init(Value w) { root.width = w; root.sons.resize(w, NULL); };
         void insertSolution(const vector<Value> &sol);
+        void printTrie();
         size_t getNbSolutions() { return root.nbSolutions; };
         private:
             TrieNode root;

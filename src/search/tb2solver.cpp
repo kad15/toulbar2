@@ -2654,11 +2654,12 @@ bool Solver::SolutionTrie::TrieNode::present(Value v)
     return (sons[v] != NULL);
 }
 
-void Solver::SolutionTrie::TrieNode::insertNode(Value v){
+void Solver::SolutionTrie::TrieNode::insertNode(Value v)
+{
     sons[v] = new TrieNode();
 }
 
-void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value> &sol, int pos)
+void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, int pos)
 {
     if (!present(sol[pos])) {
         insertNode(sol[pos]);
@@ -2666,11 +2667,30 @@ void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value> &sol, in
     sons[sol[pos]]->insertSolution(sol, pos + 1);
 }
 
+void Solver::SolutionTrie::TrieNode::printTrie(vector<Value>& sol)
+{
+    if (sons.size() == 0) {
+        cout << sol << endl;
+    } else {
+        for (size_t i = 0; i < sons.size(); i++)
+            if (sons[i] != NULL) {
+                sol.push_back(i);
+                sons[i]->printTrie(sol);
+                sol.pop_back();
+            }
+    }
+}
+
 size_t Solver::SolutionTrie::TrieNode::nbSolutions = 0;
 
 void Solver::SolutionTrie::insertSolution(const vector<Value> &sol)
 {
     root.insertSolution(sol, 0);
+}
+
+void Solver::SolutionTrie::printTrie(){
+    vector<Value> sol;
+    root.printTrie(sol);
 }
 
 /* Local Variables: */
