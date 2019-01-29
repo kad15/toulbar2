@@ -2136,17 +2136,76 @@ bool Solver::solve()
 
                             do {
                                 wcsp->setUb(initialUb); // (re)start search with initial upper bound
+
+                                // get solution (vector<Value> from Trie)
+                                // search for solution j (1<=j<=ToulBar2::divNbSol)
+                                string c_name;
+                                vector<Cost> vc;
+                                bool first_pos = true;
+                                EnumeratedVariable* cp;
+                                int cpId;
+                                for (EnumeratedVariable* x : divVariables) {
+                                    // Add constraint between x and c_j_x
+                                    int xId = x->getCurrentVarId(); //index of variable x
+                                    c_name = "c_sol" + std::to_string(j) + "_" + x->getName();
+                                    EnumeratedVariable* c; // variable qui a le nom c_name
+                                    int cId = c->getCurrentVarId(); //index of variable c
+                                    vc.resize(0);
+                                    for (unsigned val_x = 0; val_x < x->getDomainSize(); val_x++) {
+                                        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                                            // val_c = delta(divBound+1) + qp
+                                            int delta = val_c / (ToulBar2::divBound + 1);
+                                            if ((val_x != solution[xId]) == delta) {
+                                                vc.push_back(MIN_COST);
+                                            } else {
+                                                vc.push_back(initialUb);
+                                            }
+                                        }
+                                    }
+                                    wcsp->postIncrementalBinaryConstraint(xId, cId, vc);
+                                    // Add constraint between c_j_x and c_j_x-1
+                                    vc.resize(0);
+                                    if (first_pos) {
+                                        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                                            if ((val_c % (ToulBar2::divBound)) == 0) {
+                                                vc.push_back(0);
+                                            } else {
+                                                vc.push_back(initialUb);
+                                            }
+                                        }
+                                        wcsp->postIncrementalUnaryConstraint(cId, vc);
+                                        first_pos = false;
+                                    } else {
+                                        // add binary constraint between cp and c
+                                        for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
+                                            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c) {
+                                                int deltap = val_cp / (ToulBar2::divBound + 1);
+                                                int qp = val_cp % (ToulBar2::divBound + 1);
+                                                int q = val_c % (ToulBar2::divBound + 1);
+                                                if (q == min(qp + deltap, ToulBar2::divBound)) {
+                                                    vc.push_back(0);
+                                                } else {
+                                                    vc.push_back(initialUb);
+                                                }
+                                            }
+                                        }
+                                        wcsp->postIncrementalBinaryConstraint(cpId, cId, vc);
+                                    }
+                                    cp = c;
+                                    cpId = cId;
+                                }
+
                                 // Here one can add "permanent cost functions"
-                                vector<Cost> vc1{ 1, 3, 1, 3 };
-                                wcsp->postIncrementalBinaryConstraint(0, 1, vc1); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
-                                vector<Cost> vc3{ 1, 3, 1, 3, 1, 3, 1, 3 };
-                                wcsp->postIncrementalTernaryConstraint(0, 1, 2, vc3); // add incremental constraint here using the extra pool of ternary constraints (used for OTF elimination)
-                                Store::store(); // protect the current CFN from changes by search or new cost functions
-                                vector<Cost> vc2{ 2, 1, 2, 1 };
-                                wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
-                                vector<Cost> vcu{ 0, 1 };
-                                wcsp->postIncrementalUnaryConstraint(0, vcu);
-                                wcsp->propagate();
+                                //vector<Cost> vc1{ 1, 3, 1, 3 };
+                                //wcsp->postIncrementalBinaryConstraint(0, 1, vc1); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
+                                //vector<Cost> vc3{ 1, 3, 1, 3, 1, 3, 1, 3 };
+                                //wcsp->postIncrementalTernaryConstraint(0, 1, 2, vc3); // add incremental constraint here using the extra pool of ternary constraints (used for OTF elimination)
+                                //Store::store(); // protect the current CFN from changes by search or new cost functions
+                                //vector<Cost> vc2{ 2, 1, 2, 1 };
+                                //wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
+                                //vector<Cost> vcu{ 0, 1 };
+                                //wcsp->postIncrementalUnaryConstraint(0, vcu);
+                                //wcsp->propagate();
                                 try {
                                     try {
                                         if (ToulBar2::isZ)
@@ -2683,12 +2742,13 @@ void Solver::SolutionTrie::TrieNode::printTrie(vector<Value>& sol)
 
 size_t Solver::SolutionTrie::TrieNode::nbSolutions = 0;
 
-void Solver::SolutionTrie::insertSolution(const vector<Value> &sol)
+void Solver::SolutionTrie::insertSolution(const vector<Value>& sol)
 {
     root.insertSolution(sol, 0);
 }
 
-void Solver::SolutionTrie::printTrie(){
+void Solver::SolutionTrie::printTrie()
+{
     vector<Value> sol;
     root.printTrie(sol);
 }

@@ -15,6 +15,7 @@
 #include "cpd/tb2trienum.hpp"
 #include "cpd/tb2seq.hpp"
 #include "core/tb2clqcover.hpp"
+#include "core/tb2variable.hpp"
 #ifdef BOOST
 #define BOOST_IOSTREAMS_NO_LIB
 #include <boost/version.hpp>
@@ -2700,9 +2701,9 @@ Cost WCSP::read_wcsp(const char* fileName)
     // if diverse solution search, add constraint variables
     if (ToulBar2::divNbSol > 0) {
         string varName;
-        for (unsigned j = 0; j <= ToulBar2::divNbSol; j++) {
-            for (size_t i = 0; i < divVariables.size(); ++i) {
-                varName = "c_sol" + std::to_string(j) + "_" + std::to_string(i);
+        for (int j = 0; j <= ToulBar2::divNbSol; j++) {
+            for (Variable* x : divVariables) {
+                varName = "c_sol" + std::to_string(j) + "_" + x->get_name();
                 makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1);
             }
         }
