@@ -667,6 +667,9 @@ unsigned CFNStreamReader::readVariable(unsigned i)
         cerr << "Error: variable name '" << varName << "' not unique at line " << lineNumber << endl;
         exit(EXIT_FAILURE);
     }
+    if (ToulBar2::divNbSol > 0 && varName.size() > 0 && varName[0] == 'Z') {
+        wcsp->divVariables.push_back(wcsp->getVar(varIndex));
+    }
     // set the value names (if any) in the Variable.values map
     varValNameToIdx.resize(varValNameToIdx.size() + 1);
     assert(varValNameToIdx.size() == varIndex + 1);
@@ -2694,14 +2697,13 @@ Cost WCSP::read_wcsp(const char* fileName)
         cout << "Read " << nbvar << " variables, with " << nbvaltrue << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity << "." << endl;
     return getUb();
 
-    // if diverse solution search
-    // Add constraint variables
+    // if diverse solution search, add constraint variables
     if (ToulBar2::divNbSol > 0) {
         string varName;
-        for (int j = 0; j <= ToulBar2::divNbSol; j++) {
-            for (int varIdx : divVariables) {
+        for (unsigned j = 0; j <= ToulBar2::divNbSol; j++) {
+            for (size_t i = 0; i < divVariables.size(); ++i) {
                 varName = "c_sol" + std::to_string(j) + "_" + std::to_string(i);
-                makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1)
+                makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1);
             }
         }
     }
