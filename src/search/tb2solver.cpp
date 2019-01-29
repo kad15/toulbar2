@@ -2164,7 +2164,7 @@ bool Solver::solve()
                                 } catch (FindNewSequence) {
                                 }
                                 Store::restore(initialDepth_cpy); // undo search
-                                solTrie.insertSolution();
+                                solTrie.insertSolution(wcsp->getSolution());
 
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
@@ -2636,16 +2636,41 @@ void Solver::restore(CPStore& cp, OpenNode nd)
     //if (wcsp->getLb() != nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST))) cout << "***** node cost: " << nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST)) << " but lb: " << wcsp->getLb() << endl;
 }
 
-Solver::SolutionTrie::TrieNode::TrieNode() {
-
+Solver::SolutionTrie::TrieNode::TrieNode()
+{
+    sons.resize(width, NULL);
 }
 
-Solver::SolutionTrie::TrieNode::~TrieNode() {
-
+Solver::SolutionTrie::TrieNode::~TrieNode()
+{
+    for (size_t i = 0; i < sons.size(); i++)
+        delete sons[i];
 }
 
-void Solver::SolutionTrie::insertSolution(){
+Value Solver::SolutionTrie::TrieNode::width = 0;
 
+bool Solver::SolutionTrie::TrieNode::present(Value v)
+{
+    return (sons[v] != NULL);
+}
+
+void Solver::SolutionTrie::TrieNode::insertNode(Value v){
+    sons[v] = new TrieNode();
+}
+
+void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value> &sol, int pos)
+{
+    if (!present(sol[pos])) {
+        insertNode(sol[pos]);
+    }
+    sons[sol[pos]]->insertSolution(sol, pos + 1);
+}
+
+size_t Solver::SolutionTrie::TrieNode::nbSolutions = 0;
+
+void Solver::SolutionTrie::insertSolution(const vector<Value> &sol)
+{
+    root.insertSolution(sol, 0);
 }
 
 /* Local Variables: */

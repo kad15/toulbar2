@@ -145,18 +145,20 @@ public:
         public:
             TrieNode();
             ~TrieNode();
-            void insert_solution();
+            void insertSolution(const vector<Value> &sol, int pos);
             vector<TrieNode*> sons;
             void insertNode(Value v);
+            bool present(Value v);
             static size_t nbSolutions;
+            static Value width;
         };
 
     public:
-        void init(Value w) { width = w; root.sons.clear(); };
-        void insertSolution();
+        SolutionTrie()  {};
+        ~SolutionTrie() {};
+        void init(Value w) { root.width = w; root.sons.resize(w, NULL); };
+        void insertSolution(const vector<Value> &sol);
         size_t getNbSolutions() { return root.nbSolutions; };
-        unsigned int width;
-
         private:
             TrieNode root;
     };
