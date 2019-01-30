@@ -43,6 +43,7 @@ class WCSP FINAL : public WeightedCSP {
     StoreCost negCost; ///< shifting value to be added to problem lowerbound when computing the partition function
     vector<Variable*> vars; ///< list of all variables
     vector<Variable*> divVariables; ///< list of variables submitted to diversity requirements
+    vector<map<int, int>> divVarsId; // vector[j][idx] = index of the variable that encodes the diversity constraint on sol j at position idx
     vector<Value> bestValues; ///< hint for some value ordering heuristics (ONLY used by RDS)
     vector<Constraint*> constrs; ///< list of original cost functions
     int NCBucketSize; ///< number of buckets for NC bucket sort

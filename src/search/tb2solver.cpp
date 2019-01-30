@@ -2133,14 +2133,18 @@ bool Solver::solve()
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
+                            int sol_id = 0;
 
                             do {
                                 wcsp->setUb(initialUb); // (re)start search with initial upper bound
 
                                 //get solution from previous solve ; sol_id = number of the last solution found
-                                vector<Value> solution;
-                                int sol_id;
-                                wcsp->addDivConstraint(solution, sol_id, initialUb);
+                                if (sol_id > 0) {
+                                    vector<Value> solution; // TODO get solution from Trie
+                                    wcsp->addDivConstraint(solution, sol_id, initialUb);
+                                }
+                                sol_id += 1;
+                                incrementalSearch = (sol_id < ToulBar2::divNbSol);
 
                                 // Here one can add "permanent cost functions"
                                 //vector<Cost> vc1{ 1, 3, 1, 3 };
@@ -2171,7 +2175,6 @@ bool Solver::solve()
                                 }
                                 Store::restore(initialDepth_cpy); // undo search
                                 solTrie.insertSolution(wcsp->getSolution());
-
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {

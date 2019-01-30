@@ -2699,15 +2699,14 @@ Cost WCSP::read_wcsp(const char* fileName)
     return getUb();
 
     // if diverse solution search, add constraint variables
-    vector<vector<int>> divVarsId(ToulBar2::divNbSol - 1); //define in wcsp ?
+    divVarsId.resize(ToulBar2::divNbSol - 1);
     if (ToulBar2::divNbSol > 0) {
         string varName;
         for (int j = 0; j < ToulBar2::divNbSol - 1; j++) {
-            //divVarId[j].resize(??)
             for (Variable* x : divVariables) {
                 int xId = x->getCurrentVarId();
                 varName = "c_sol" + std::to_string(j) + "_" + x->getName();
-                divVarsId[j][xId] = makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1); // au lieu de xid: la position dans divVariables
+                divVarsId[j][xId] = makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1);
             }
         }
     }

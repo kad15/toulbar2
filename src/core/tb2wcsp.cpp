@@ -977,7 +977,7 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     bool first_pos = true;
-    EnumeratedVariable* cp;
+    Variable* cp;
     int cpId;
     for (Variable* x : divVariables) {
         // Add constraint between x and c_j_x
@@ -1011,12 +1011,12 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
             first_pos = false;
         } else {
             // add binary constraint between cp and c
-            for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
-                for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c) {
+            for (unsigned val_cp = 0; val_cp < cp->getDomainSize(); val_cp++) {
+                for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
                     int deltap = val_cp / (ToulBar2::divBound + 1);
                     int qp = val_cp % (ToulBar2::divBound + 1);
                     int q = val_c % (ToulBar2::divBound + 1);
-                    if (q == min(qp + deltap, ToulBar2::divBound)) {
+                    if ((q == ToulBar2::divBound && qp + deltap >= ToulBar2::divBound) || (q == qp + deltap)) {
                         vc.push_back(0);
                     } else {
                         vc.push_back(cost);
