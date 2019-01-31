@@ -408,6 +408,18 @@ CFNStreamReader::CFNStreamReader(istream& stream, WCSP* wcsp)
 
     wcsp->sortConstraints();
 
+    // if diverse solution search, add constraint variables
+    wcsp->divVarsId.resize(ToulBar2::divNbSol - 1);
+    if (ToulBar2::divNbSol > 1) {
+        string varName;
+        for (int j = 0; j < ToulBar2::divNbSol - 1; j++) {
+            for (Variable* x : wcsp->divVariables) {
+                int xId = x->getCurrentVarId();
+                varName = "c_sol" + std::to_string(j) + "_" + x->getName();
+                wcsp->divVarsId[j][xId] = wcsp->makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1);
+            }
+        }
+    }
     if (ToulBar2::verbose >= 0)
         cout << "Read " << nvar << " variables, with " << nval << " values at most, and " << ncf << " cost functions, with maximum arity " << maxarity << "." << endl;
 }
@@ -2697,19 +2709,6 @@ Cost WCSP::read_wcsp(const char* fileName)
     if (ToulBar2::verbose >= 0)
         cout << "Read " << nbvar << " variables, with " << nbvaltrue << " values at most, and " << nbconstr << " cost functions, with maximum arity " << maxarity << "." << endl;
     return getUb();
-
-    // if diverse solution search, add constraint variables
-    divVarsId.resize(ToulBar2::divNbSol - 1);
-    if (ToulBar2::divNbSol > 0) {
-        string varName;
-        for (int j = 0; j < ToulBar2::divNbSol - 1; j++) {
-            for (Variable* x : divVariables) {
-                int xId = x->getCurrentVarId();
-                varName = "c_sol" + std::to_string(j) + "_" + x->getName();
-                divVarsId[j][xId] = makeEnumeratedVariable(varName, 0, 2 * ToulBar2::divBound + 1);
-            }
-        }
-    }
 }
 
 void WCSP::read_random(int n, int m, vector<int>& p, int seed, bool forceSubModular, string globalname)

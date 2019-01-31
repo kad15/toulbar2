@@ -2134,18 +2134,21 @@ bool Solver::solve()
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
                             vector<Value> solution;
-                            int sol_id = 0;
+                            int sol_j = 0;
 
                             do {
+                                cout << "Search " << sol_j + 1 << endl;
                                 wcsp->setUb(initialUb); // (re)start search with initial upper bound
 
                                 //get solution from previous solve ; sol_id = number of the last solution found
-                                if (sol_id > 0) {
+                                if (sol_j > 0) {
                                     solution = wcsp->getSolution();
-                                    wcsp->addDivConstraint(solution, sol_id, initialUb);
+                                    //cout << "solution " << solution << endl;
+                                    wcsp->addDivConstraint(solution, sol_j - 1, initialUb);
+                                    wcsp->propagate();
                                 }
-                                sol_id += 1;
-                                incrementalSearch = (sol_id < ToulBar2::divNbSol);
+                                sol_j += 1;
+                                incrementalSearch = (sol_j < ToulBar2::divNbSol);
 
                                 // Here one can add "permanent cost functions"
                                 //vector<Cost> vc1{ 1, 3, 1, 3 };
@@ -2168,14 +2171,14 @@ bool Solver::solve()
                                         wcsp->whenContradiction();
                                     }
                                     if (wcsp->getUb() < initialUb) {
-                                        cout << "Found a solution" << endl;
+                                        cout << "Found a solution " << wcsp->getSolution() << endl;
                                     } else {
                                         cout << "No solution " << endl;
                                     }
                                 } catch (FindNewSequence) {
                                 }
                                 Store::restore(initialDepth_cpy); // undo search
-                                solTrie.insertSolution(wcsp->getSolution());
+                                //solTrie.insertSolution(wcsp->getSolution());
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {

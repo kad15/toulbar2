@@ -339,10 +339,10 @@ void tb2init()
     ToulBar2::deltaUbS = "";
     ToulBar2::deltaUb = MIN_COST;
 
-    ToulBar2::divNbSol = 1;
+    ToulBar2::divNbSol = 2;
     //  ToulBar2::divMat ;
     ToulBar2::divBound = 1;
-    ToulBar2::divCost = MIN_COST;
+    ToulBar2::divCost = 0;
 
     ToulBar2::bep = NULL;
     ToulBar2::wcnf = false;
@@ -971,58 +971,48 @@ void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, 
     xyz->propagate();
 }
 
-void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
+void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 {
     // get solution (vector<Value> from Trie)
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     bool first_pos = true;
-    Variable* c;
-    Variable* cp;
+    EnumeratedVariable* ex;
+    EnumeratedVariable* c;
+    EnumeratedVariable* cp;
     int cId;
     int cpId;
     for (Variable* x : divVariables) {
         // Add constraint between x and c_j_x
         int xId = x->getCurrentVarId(); //index of variable x
-        cId = divVarsId[sol_id][xId]; //index of variable c
-        c = getVar(cId);
+        ex = (EnumeratedVariable*)x;
+        cId = divVarsId[sol_j][xId]; //index of variable c
+        c = (EnumeratedVariable*)getVar(cId);
         vc.resize(0);
-        for (unsigned val_x = 0; val_x < x->getDomainSize(); val_x++) { //val_x = value index ?
-            for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
+        for (unsigned val_x = 0; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
                 // val_c = delta(divBound+1) + qp
-                int delta = val_c / (ToulBar2::divBound + 1);
-                if ((val_x != solution[xId]) == delta) {
-                    vc.push_back(MIN_COST);
-                } else {
-                    vc.push_back(cost);
-                }
+                unsigned delta = val_c / (ToulBar2::divBound + 1);
+                vc.push_back(((val_x != solution[xId]) == delta) ? 0 : getUb());
             }
         }
         postIncrementalBinaryConstraint(xId, cId, vc);
         // Add constraint between c_j_x and c_j_x-1
         vc.resize(0);
         if (first_pos) {
-            for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
-                if ((val_c % (ToulBar2::divBound)) == 0) {
-                    vc.push_back(0);
-                } else {
-                    vc.push_back(cost);
-                }
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                vc.push_back(((val_c % (ToulBar2::divBound + 1)) == 0) ? 0 : getUb());
             }
             postIncrementalUnaryConstraint(cId, vc);
             first_pos = false;
         } else {
             // add binary constraint between cp and c
-            for (unsigned val_cp = 0; val_cp < cp->getDomainSize(); val_cp++) {
-                for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
-                    int deltap = val_cp / (ToulBar2::divBound + 1);
-                    int qp = val_cp % (ToulBar2::divBound + 1);
-                    int q = val_c % (ToulBar2::divBound + 1);
-                    if ((q == ToulBar2::divBound && qp + deltap >= ToulBar2::divBound) || (q == qp + deltap)) {
-                        vc.push_back(0);
-                    } else {
-                        vc.push_back(cost);
-                    }
+            for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
+                for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                    unsigned deltap = val_cp / (ToulBar2::divBound + 1);
+                    unsigned qp = val_cp % (ToulBar2::divBound + 1);
+                    unsigned q = val_c % (ToulBar2::divBound + 1);
+                    vc.push_back((q == min(ToulBar2::divBound, qp + deltap)) ? 0 : getUb());
                 }
             }
             postIncrementalBinaryConstraint(cpId, cId, vc);
@@ -1033,9 +1023,9 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
     //Unary constraint on last var_c to ensure diversity
     vc.resize(0);
     for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
-        int q = val_c % (ToulBar2::divBound + 1);
-        int delta = val_c / (ToulBar2::divBound + 1);
-        vc.push_back(q + delta >= ToulBar2::divBound ? 0 : ToulBar2::divCost);
+        unsigned q = val_c % (ToulBar2::divBound + 1);
+        unsigned delta = val_c / (ToulBar2::divBound + 1);
+        vc.push_back(q + delta >= ToulBar2::divBound ? 0 : getUb());
     }
     postIncrementalUnaryConstraint(cId, vc);
 }
