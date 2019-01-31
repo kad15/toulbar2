@@ -2133,6 +2133,7 @@ bool Solver::solve()
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
+                            vector<Value> solution;
                             int sol_id = 0;
 
                             do {
@@ -2140,7 +2141,7 @@ bool Solver::solve()
 
                                 //get solution from previous solve ; sol_id = number of the last solution found
                                 if (sol_id > 0) {
-                                    vector<Value> solution; // TODO get solution from Trie
+                                    solution = wcsp->getSolution();
                                     wcsp->addDivConstraint(solution, sol_id, initialUb);
                                 }
                                 sol_id += 1;

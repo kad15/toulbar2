@@ -977,15 +977,17 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     bool first_pos = true;
+    Variable* c;
     Variable* cp;
+    int cId;
     int cpId;
     for (Variable* x : divVariables) {
         // Add constraint between x and c_j_x
         int xId = x->getCurrentVarId(); //index of variable x
-        int cId = divVarsId[sol_id][xId]; //index of variable c
-        Variable* c = getVar(cId);
+        cId = divVarsId[sol_id][xId]; //index of variable c
+        c = getVar(cId);
         vc.resize(0);
-        for (unsigned val_x = 0; val_x < x->getDomainSize(); val_x++) {
+        for (unsigned val_x = 0; val_x < x->getDomainSize(); val_x++) { //val_x = value index ?
             for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
                 // val_c = delta(divBound+1) + qp
                 int delta = val_c / (ToulBar2::divBound + 1);
@@ -1028,6 +1030,14 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_id, Cost cost)
         cp = c;
         cpId = cId;
     }
+    //Unary constraint on last var_c to ensure diversity
+    vc.resize(0);
+    for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
+        int q = val_c % (ToulBar2::divBound + 1);
+        int delta = val_c / (ToulBar2::divBound + 1);
+        vc.push_back(q + delta >= ToulBar2::divBound ? 0 : ToulBar2::divCost);
+    }
+    postIncrementalUnaryConstraint(cId, vc);
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)
