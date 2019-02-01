@@ -680,9 +680,10 @@ unsigned CFNStreamReader::readVariable(unsigned i)
         cerr << "Error: variable name '" << varName << "' not unique at line " << lineNumber << endl;
         exit(EXIT_FAILURE);
     }
-    if (ToulBar2::divNbSol > 0 && varName.size() > 0 && varName[0] == 'Z') {
+    if (ToulBar2::divNbSol > 0 && varName.size() > 0 && varName[0] == 'Z' && valueNames.size() > 1) {
         wcsp->divVariables.push_back(wcsp->getVar(varIndex));
     }
+
     // set the value names (if any) in the Variable.values map
     varValNameToIdx.resize(varValNameToIdx.size() + 1);
     assert(varValNameToIdx.size() == varIndex + 1);

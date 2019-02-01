@@ -2145,7 +2145,9 @@ bool Solver::solve()
                                     solution = wcsp->getSolution();
                                     //cout << "solution " << solution << endl;
                                     wcsp->addDivConstraint(solution, sol_j - 1, initialUb);
+                                    cout << "Diversity constraint added" << endl;
                                     wcsp->propagate();
+                                    cout << "Propagation ok" << endl;
                                 }
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
@@ -2160,7 +2162,7 @@ bool Solver::solve()
                                 //wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
                                 //vector<Cost> vcu{ 0, 1 };
                                 //wcsp->postIncrementalUnaryConstraint(0, vcu);
-                                wcsp->propagate();
+                                //wcsp->propagate();
                                 try {
                                     try {
                                         if (ToulBar2::isZ)
