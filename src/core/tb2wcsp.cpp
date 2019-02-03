@@ -339,10 +339,10 @@ void tb2init()
     ToulBar2::deltaUbS = "";
     ToulBar2::deltaUb = MIN_COST;
 
-    ToulBar2::divNbSol = 2;
+    ToulBar2::divNbSol = 0;
     //  ToulBar2::divMat ;
-    ToulBar2::divBound = 1;
-    ToulBar2::divCost = 0;
+    ToulBar2::divBound = 0;
+    //ToulBar2::divCost = 0;
 
     ToulBar2::bep = NULL;
     ToulBar2::wcnf = false;
@@ -973,28 +973,30 @@ void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, 
 
 void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 {
-    // get solution (vector<Value> from Trie)
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     bool first_pos = true;
     EnumeratedVariable* ex;
+
     EnumeratedVariable* c;
     EnumeratedVariable* cp;
     int cId;
     int cpId;
+
     cout << "divVariables idx ";
-    for (Variable* x : divVariables) {
-        int xId = x->getCurrentVarId();
-        cout << xId << " ";
-    }
+    for (Variable* x : divVariables)
+        cout << x->getCurrentVarId() << " ";
     cout << endl;
+
     for (Variable* x : divVariables) {
-        // Add constraint between x and c_j_x
-        int xId = x->getCurrentVarId(); //index of variable x
         ex = (EnumeratedVariable*)x;
+        int xId = x->getCurrentVarId(); //index of variable x
+
+        // Add constraint between x and c_j_x
         cId = divVarsId[sol_j][xId]; //index of variable c
         c = (EnumeratedVariable*)getVar(cId);
-        vc.resize(0);
+
+        vc.clear();
         for (unsigned val_x = 0; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
             for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
                 // val_c = delta(divBound+1) + qp
@@ -1004,8 +1006,9 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
         }
         cout << vc << endl;
         postIncrementalBinaryConstraint(xId, cId, vc);
+
         // Add constraint between c_j_x and c_j_x-1
-        vc.resize(0);
+        vc.clear();
         if (first_pos) {
             for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
                 vc.push_back(((val_c % (ToulBar2::divBound + 1)) == 0) ? MIN_COST : getUb());
@@ -1028,13 +1031,15 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
         cpId = cId;
     }
     //Unary constraint on last var_c to ensure diversity
-    vc.resize(0);
-    for (unsigned val_c = 0; val_c < c->getDomainSize(); val_c++) {
-        unsigned q = val_c % (ToulBar2::divBound + 1);
-        unsigned delta = val_c / (ToulBar2::divBound + 1);
-        vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
+    if (!divVariables.empty()) {
+        vc.clear();
+        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+            unsigned q = val_c % (ToulBar2::divBound + 1);
+            unsigned delta = val_c / (ToulBar2::divBound + 1);
+            vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
+        }
+        postIncrementalUnaryConstraint(cId, vc);
     }
-    postIncrementalUnaryConstraint(cId, vc);
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)

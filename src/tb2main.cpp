@@ -243,8 +243,11 @@ enum {
     OPT_EDAC,
     OPT_ub,
     OPT_ub_energy,
+    OPT_divDist,
 
     // CPD options
+    OPT_cpd,
+    OPT_scp,
     OPT_MUTATE,
     OPT_PSMBIAS,
     OPT_PSSMBIAS,
@@ -254,6 +257,7 @@ enum {
     OPT_AMINOMRF,
     OPT_AMINOMRFBIAS,
     OPT_BESTCONF,
+
     // Z options
     OPT_Z,
     OPT_SUBZ,
@@ -283,10 +287,6 @@ enum {
     // random generator
     OPT_seed,
     OPT_random,
-
-    // CPD options
-    OPT_cpd,
-    OPT_scp,
 
 #ifdef OPENMPI
     OPT_mpi,
@@ -471,6 +471,8 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EDAC, (char*)"-k", SO_REQ_SEP },
     { OPT_ub, (char*)"-ub", SO_REQ_SEP }, // init upper bound in cli
     { OPT_ub_energy, (char*)"-ubE", SO_OPT }, // init upper bound in cli (energy value) //TODO CFN FORMAT
+    { OPT_divDist, (char*)"-div", SO_REQ_SEP }, // distance between solutions
+
     // MENDELSOFT
     { OPT_generation, (char*)"-g", SO_NONE }, //sort pedigree by increasing generation number and if equal by increasing individual number
     //	{ OPT_pedigree_by_MPE,  		(char*) "-y", 				SO_OPT			}, // bayesian flag
@@ -2021,6 +2023,17 @@ int _tmain(int argc, TCHAR* argv[])
                 }
                 if (ToulBar2::debug)
                     cout << "UB =" << ToulBar2::ubE << " passed in  command line" << endl;
+            }
+
+            // diversity
+            if (args.OptionId() == OPT_divDist) {
+                if (args.OptionArg() != NULL) {
+                    ToulBar2::divBound = atoi(args.OptionArg());
+                    ToulBar2::divNbSol = ToulBar2::allSolutions;
+                    ToulBar2::allSolutions = 0;
+                    if (ToulBar2::debug)
+                        cout << "Diversity distance = " << ToulBar2::divBound << endl;
+                }
             }
 
             // upper bound initialisation from command line
