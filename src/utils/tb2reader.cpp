@@ -2132,7 +2132,7 @@ Cost WCSP::read_wcsp(const char* fileName)
         divVarsId.resize(ToulBar2::divNbSol - 1);
         for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
             for (Variable* x : divVariables) {
-                int xId = x->getCurrentVarId();
+                int xId = x->wcspIndex;
                 divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
             }
         }

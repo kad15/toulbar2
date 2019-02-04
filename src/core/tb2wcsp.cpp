@@ -911,6 +911,7 @@ void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>&
     EnumeratedVariable* z = (EnumeratedVariable*)getVar(zIndex);
     EnumeratedVariable* y = (EnumeratedVariable*)getVar(yIndex);
     BinaryConstraint* yz = y->getConstr(z);
+    //cout << "Post incremental binary constraint on " << z->getName() << " and " << y->getName() << endl;
 
     initElimConstr();
     BinaryConstraint* yznew = newBinaryConstr(y, z, NULL, NULL);
@@ -982,15 +983,15 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
     EnumeratedVariable* cp;
     int cId;
     int cpId;
-
+    /*
     cout << "divVariables idx ";
     for (Variable* x : divVariables)
         cout << x->getCurrentVarId() << " ";
     cout << endl;
-
+    */
     for (Variable* x : divVariables) {
         ex = (EnumeratedVariable*)x;
-        int xId = x->getCurrentVarId(); //index of variable x
+        int xId = x->wcspIndex; //index of variable x
 
         // Add constraint between x and c_j_x
         cId = divVarsId[sol_j][xId]; //index of variable c
@@ -1004,7 +1005,8 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
                 vc.push_back(((val_x != solution[xId]) == delta) ? MIN_COST : getUb());
             }
         }
-        cout << vc << endl;
+        //cout << "Adding binary constraint on " << ex->getName() << " and " << c->getName() << endl;
+        //cout << vc << endl;
         postIncrementalBinaryConstraint(xId, cId, vc);
 
         // Add constraint between c_j_x and c_j_x-1
