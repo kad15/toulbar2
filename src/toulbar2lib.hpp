@@ -372,6 +372,7 @@ public:
     virtual void read_qpbo(const char* fileName) = 0; ///< \brief load quadratic pseudo-Boolean optimization problem in unconstrained quadratic programming text format (first text line with n, number of variables and m, number of triplets, followed by the m triplets (x,y,cost) describing the sparse symmetric nXn cost matrix with variable indexes such that x <= y and any positive or negative real numbers for costs)
 
     virtual const vector<Value>& getSolution(Cost* cost_ptr = NULL) = 0; ///< \brief returns current best solution and its cost
+    virtual const vector<Variable*>& getDivVariables() = 0; ///< \brief returns all variables on which a diversity request exists
     virtual void setSolution(Cost cost, TAssign* sol = NULL) = 0; ///< \brief set best solution from current assigned values or from a given assignment (for BTD-like methods)
     virtual void printSolution(ostream& os) = 0; ///< \brief prints current best solution
     virtual void printSolution(FILE* f) = 0; ///< \brief prints current best solution

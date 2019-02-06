@@ -342,7 +342,7 @@ void tb2init()
     ToulBar2::divNbSol = 0;
     //  ToulBar2::divMat ;
     ToulBar2::divBound = 0;
-    //ToulBar2::divCost = 0;
+    // ToulBar2::divCost = 0;
 
     ToulBar2::bep = NULL;
     ToulBar2::wcnf = false;
@@ -983,12 +983,7 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
     EnumeratedVariable* cp;
     int cId;
     int cpId;
-    /*
-    cout << "divVariables idx ";
-    for (Variable* x : divVariables)
-        cout << x->getCurrentVarId() << " ";
-    cout << endl;
-    */
+
     for (Variable* x : divVariables) {
         ex = (EnumeratedVariable*)x;
         int xId = x->wcspIndex; //index of variable x
@@ -4429,6 +4424,11 @@ void WCSP::setDACOrder(vector<int>& order)
     }
     if (ToulBar2::verbose >= 1)
         cout << endl;
+
+    sort(divVariables.begin(), divVariables.end(),
+        [](const Variable* v1, const Variable* v2) -> bool {
+            return (v1->getDACOrder() > v2->getDACOrder());
+        });
 
     for (unsigned int i = 0; i < numberOfConstraints(); i++) {
         Constraint* ctr = getCtr(i);

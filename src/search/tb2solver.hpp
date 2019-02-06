@@ -143,26 +143,27 @@ public:
 
         class TrieNode {
         public:
-            TrieNode();
+            TrieNode(size_t w = 0);
             ~TrieNode();
-            void insertSolution(const vector<Value> &sol, int pos);
+            void insertSolution(const vector<Value>& sol, int pos);
             vector<TrieNode*> sons;
-            void insertNode(Value v);
+            void insertNode(Value v, int pos);
             bool present(Value v);
-            void printTrie(vector<Value> &sol);
+            void printTrie(vector<Value>& sol);
             static size_t nbSolutions;
-            static Value width;
+            static vector<size_t> widths;
         };
 
     public:
-        SolutionTrie()  {};
-        ~SolutionTrie() {};
-        void init(Value w) { root.width = w; root.sons.resize(w, NULL); };
-        void insertSolution(const vector<Value> &sol);
+        SolutionTrie(){};
+        ~SolutionTrie(){};
+        void init(const vector<Variable*>& vv);
+        void insertSolution(const vector<Value>& sol);
         void printTrie();
         size_t getNbSolutions() { return root.nbSolutions; };
-        private:
-            TrieNode root;
+
+    private:
+        TrieNode root;
     };
 
     typedef enum {

@@ -2133,7 +2133,7 @@ bool Solver::solve()
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
-                            vector<Value> solution;
+                            solTrie.init(wcsp->getDivVariables());
                             int sol_j = 0;
 
                             do {
@@ -2142,9 +2142,7 @@ bool Solver::solve()
 
                                 //get solution from previous solve ; sol_id = number of the last solution found
                                 if (sol_j > 0) {
-                                    solution = wcsp->getSolution();
-                                    //cout << "solution " << solution << endl;
-                                    wcsp->addDivConstraint(solution, sol_j - 1, initialUb);
+                                    wcsp->addDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
                                     cout << "Diversity constraint added" << endl;
                                     wcsp->propagate();
                                     cout << "Propagation ok" << endl;
@@ -2180,7 +2178,11 @@ bool Solver::solve()
                                 } catch (FindNewSequence) {
                                 }
                                 Store::restore(initialDepth_cpy); // undo search
-                                //solTrie.insertSolution(wcsp->getSolution());
+                                vector<Value> divSol;
+                                for (auto var : wcsp->getDivVariables()) {
+                                    divSol.push_back(wcsp->getSolution()[var->wcspIndex]);
+                                }
+                                solTrie.insertSolution(divSol);
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
@@ -2651,9 +2653,9 @@ void Solver::restore(CPStore& cp, OpenNode nd)
     //if (wcsp->getLb() != nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST))) cout << "***** node cost: " << nd.getCost(((wcsp->getTreeDec())?wcsp->getTreeDec()->getCurrentCluster()->getCurrentDelta():MIN_COST)) << " but lb: " << wcsp->getLb() << endl;
 }
 
-Solver::SolutionTrie::TrieNode::TrieNode()
+Solver::SolutionTrie::TrieNode::TrieNode(size_t w)
 {
-    sons.resize(width, NULL);
+    sons.resize(w, NULL);
 }
 
 Solver::SolutionTrie::TrieNode::~TrieNode()
@@ -2662,26 +2664,34 @@ Solver::SolutionTrie::TrieNode::~TrieNode()
         delete sons[i];
 }
 
-Value Solver::SolutionTrie::TrieNode::width = 0;
+vector<size_t> Solver::SolutionTrie::TrieNode::widths;
 
 bool Solver::SolutionTrie::TrieNode::present(Value v)
 {
     return (sons[v] != NULL);
 }
 
-void Solver::SolutionTrie::TrieNode::insertNode(Value v)
+void Solver::SolutionTrie::TrieNode::insertNode(Value v, int pos)
 {
-    sons[v] = new TrieNode();
+    sons[v] = new TrieNode(widths[pos]);
 }
 
 void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, int pos)
 {
     if (!present(sol[pos])) {
-        insertNode(sol[pos]);
+        insertNode(sol[pos], pos);
     }
     sons[sol[pos]]->insertSolution(sol, pos + 1);
 }
 
+void Solver::SolutionTrie::init(const vector<Variable*>& vv)
+{
+    for (auto var : vv) {
+        Solver::SolutionTrie::TrieNode::widths.push_back(((EnumeratedVariable*)var)->getDomainInitSize());
+    }
+    if (!vv.empty())
+        root.sons.resize(Solver::SolutionTrie::TrieNode::widths[0], NULL);
+}
 void Solver::SolutionTrie::TrieNode::printTrie(vector<Value>& sol)
 {
     if (sons.size() == 0) {

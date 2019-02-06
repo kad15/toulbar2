@@ -456,6 +456,11 @@ public:
         return solution;
     }
 
+    const vector<Variable*>& getDivVariables()
+    {
+        return divVariables;
+    }
+
     void setSolution(Cost cost, TAssign* sol = NULL)
     {
         solutionCost = cost;
