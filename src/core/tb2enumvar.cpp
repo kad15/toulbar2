@@ -1180,6 +1180,8 @@ void EnumeratedVariable::eliminate()
     TreeDecomposition* td = wcsp->getTreeDec();
     if (isSep_)
         return;
+    if (isSolid() && (Store::getDepth() == 0)) // do not eliminate at root node.
+        return;
     if (ToulBar2::nbDecisionVars > 0 && wcspIndex < ToulBar2::nbDecisionVars)
         return;
     if (ToulBar2::allSolutions && ToulBar2::btdMode != 1 && wcspIndex < ToulBar2::nbvar)

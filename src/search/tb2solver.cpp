@@ -2130,6 +2130,7 @@ bool Solver::solve()
                             }
                         } else {
                             initialDepth = Store::getDepth();
+                            cout << "Initial Depth is " << initialDepth << endl;
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
@@ -2149,17 +2150,8 @@ bool Solver::solve()
                                 }
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
-
-                                // Here one can add "permanent cost functions"
-                                //vector<Cost> vc1{ 1, 3, 1, 3 };
-                                //wcsp->postIncrementalBinaryConstraint(0, 1, vc1); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
-                                //vector<Cost> vc3{ 1, 3, 1, 3, 1, 3, 1, 3 };
-                                //wcsp->postIncrementalTernaryConstraint(0, 1, 2, vc3); // add incremental constraint here using the extra pool of ternary constraints (used for OTF elimination)
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                //vector<Cost> vc2{ 2, 1, 2, 1 };
-                                //wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
-                                //vector<Cost> vcu{ 0, 1 };
-                                //wcsp->postIncrementalUnaryConstraint(0, vcu);
+                                cout << "Depth is now" << Store::getDepth() << endl;
                                 //wcsp->propagate();
                                 try {
                                     try {
@@ -2182,7 +2174,6 @@ bool Solver::solve()
                                 for (auto var : wcsp->getDivVariables()) {
                                     divSol.push_back(wcsp->getSolution()[var->wcspIndex]);
                                 }
-                                solTrie.insertSolution(divSol);
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {

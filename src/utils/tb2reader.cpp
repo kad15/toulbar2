@@ -594,7 +594,7 @@ Cost CFNStreamReader::readHeader()
     }
 
     if (ToulBar2::verbose >= 1)
-        cout << "Read bound: " << pbBound << " with precision " << ToulBar2::decimalPoint << endl;
+        cout << "Read bound: " << pbBound << ", " << ToulBar2::decimalPoint << " digits precision." << endl;
     skipCBrace();
 
     return pbBound;
@@ -839,8 +839,8 @@ std::vector<Cost> CFNStreamReader::readFunctionCostTable(vector<int> scope, bool
 // bound is the raw bound from the header (unshifted, unscaled)
 void CFNStreamReader::enforceUB(Cost bound)
 {
-
     Cost shifted = bound + (wcsp->negCost / ToulBar2::costMultiplier);
+
     if (ToulBar2::costMultiplier < 0.0)
         shifted = -shifted; // shifted unscaled upper bound
 
@@ -2125,15 +2125,22 @@ Cost WCSP::read_wcsp(const char* fileName)
     if (ToulBar2::divNbSol > 1) {
         for (auto var : vars) {
             if ((var->getDomainSize() > 1) && (!ToulBar2::cfn || (!var->getName().empty() && var->getName()[0] == 'Z'))) {
-                divVariables.push_back(var);
+                if (var->enumerated()) {
+                    divVariables.push_back(var);
+                    static_cast<EnumeratedVariable*>(var)->harden();
+                } else {
+                    cerr << "Error: cannot control diversity of non enumerated variable: " << var->getName() << endl;
+                    exit(EXIT_FAILURE);
+                }
             }
         }
-        // Variables allocation
+        // Extra variables allocation
         divVarsId.resize(ToulBar2::divNbSol - 1);
         for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
             for (Variable* x : divVariables) {
                 int xId = x->wcspIndex;
                 divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
+                static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
             }
         }
     }

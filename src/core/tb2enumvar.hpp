@@ -15,7 +15,8 @@ protected:
     vector<StoreCost> costs;
     StoreCost deltaCost;
     StoreValue support; // Warning! the unary support has to be backtrackable
-    double trwsGamma;  // The gamma factor used in TRW-S
+    bool solid; // a solid variable should not be elimnated at preprocessing
+    double trwsGamma; // The gamma factor used in TRW-S
 
     DLink<VariableWithTimeStamp> linkACQueue;
     DLink<VariableWithTimeStamp> linkDACQueue;
@@ -40,6 +41,8 @@ public:
     EnumeratedVariable(WCSP* wcsp, string n, Value* d, int dsize);
 
     bool enumerated() const FINAL { return true; }
+    bool isSolid() const { return solid; }
+    void harden() { solid = true; }
 
     unsigned int getDomainInitSize() const { return domain.getInitSize(); }
 #if defined(WCSPFORMATONLY) && !defined(NUMBERJACK)
@@ -92,8 +95,8 @@ public:
     Cost getBinaryCost(ConstraintLink c, Value myvalue, Value itsvalue);
     Cost getBinaryCost(BinaryConstraint* c, Value myvalue, Value itsvalue);
 
-    void setTRWSGamma(double g) {trwsGamma = g;}
-    double getTRWSGamma() const {return trwsGamma;}
+    void setTRWSGamma(double g) { trwsGamma = g; }
+    double getTRWSGamma() const { return trwsGamma; }
 
     Cost getInfCost() const FINAL { return costs[toIndex(getInf())] - deltaCost; }
     Cost getSupCost() const FINAL { return costs[toIndex(getSup())] - deltaCost; }

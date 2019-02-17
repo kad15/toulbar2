@@ -2311,6 +2311,22 @@ void WCSP::setInfiniteCost()
     }
 }
 
+void WCSP::registerInfCost(Cost* costPtr)
+{
+    *(reinterpret_cast<Cost**>(*costPtr)) = infTrail;
+    infTrail = costPtr;
+}
+
+void WCSP::setInfeasibleTrail(Cost cost)
+{
+    Cost* costPtr;
+    while (infTrail) {
+        costPtr = reinterpret_cast<Cost*>(*infTrail);
+        (*infTrail) = cost;
+        infTrail = costPtr;
+    }
+}
+
 unsigned int WCSP::getDomainSizeSum() const
 {
     //    cout << " " << connectedComponents() << endl;
@@ -3177,7 +3193,7 @@ void WCSP::propagateDEE()
         if (ToulBar2::interrupted)
             throw TimeOut();
         EnumeratedVariable* x = (EnumeratedVariable*)DEE.pop();
-        if (x->unassigned()) {
+        if (x->unassigned() && !(x->isSolid() && Store::getDepth() == 0)) {
             if (ToulBar2::DEE_ >= 3 || (ToulBar2::DEE_ == 2 && Store::getDepth() == 0)) {
                 for (EnumeratedVariable::iterator itera = x->begin(); itera != x->end(); ++itera) {
                     for (EnumeratedVariable::iterator iterb = x->lower_bound(*itera + 1); iterb != x->end(); ++iterb) {

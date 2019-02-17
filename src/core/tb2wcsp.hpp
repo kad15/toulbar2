@@ -41,6 +41,7 @@ class WCSP FINAL : public WeightedCSP {
     StoreCost lb; ///< current problem lower bound
     Cost ub; ///< current problem upper bound
     StoreCost negCost; ///< shifting value to be added to problem lowerbound when computing the partition function
+    Cost* infTrail; ///< points to the list of Cost table cells that are declared as infeasible
     vector<Variable*> vars; ///< list of all variables
     vector<Variable*> divVariables; ///< list of variables submitted to diversity requirements
     vector<map<int, int>> divVarsId; // vector[j][idx] = index of the variable that encodes the diversity constraint on sol j at position idx
@@ -199,6 +200,8 @@ public:
     /// \brief updates infinite costs in all cost functions accordingly to the problem global lower and upper bounds
     /// \warning to be used in preprocessing only
     void setInfiniteCost();
+    void registerInfCost(Cost* costPtr);
+    void setInfeasibleTrail(Cost cost);
 
     void decreaseLb(Cost cost)
     {
