@@ -140,31 +140,34 @@ public:
     };
 
     class SolutionTrie {
-
+    public:
         class TrieNode {
         public:
             TrieNode(size_t w = 0);
             ~TrieNode();
-            void insertSolution(const vector<Value>& sol, int pos);
+            void insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos);
             vector<TrieNode*> sons;
-            void insertNode(Value v, int pos);
+            void insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos);
             bool present(Value v);
             void printTrie(vector<Value>& sol);
             static size_t nbSolutions;
             static vector<size_t> widths;
         };
 
-    public:
         SolutionTrie(){};
         ~SolutionTrie(){};
         void init(const vector<Variable*>& vv);
         void insertSolution(const vector<Value>& sol);
         void printTrie();
         size_t getNbSolutions() { return root.nbSolutions; };
+        vector<vector<TrieNode*>> getNodesAtPos() { return nodesAtPos; };
 
     private:
         TrieNode root;
+        vector<vector<TrieNode*>> nodesAtPos;
     };
+
+    Mdd computeMDD(Solver::SolutionTrie* solTrie, Cost cost);
 
     typedef enum {
         CP_ASSIGN = 0,

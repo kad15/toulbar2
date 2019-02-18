@@ -223,6 +223,7 @@ public:
     virtual void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs) = 0;
     virtual void postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs) = 0;
     virtual void addDivConstraint(vector<Value> solution, int sol_id, Cost cost) = 0;
+    virtual void addMDDConstraint(Mdd mdd, int relaxed) = 0;
     virtual int postUnary(int xIndex, Value* d, int dsize, Cost penalty) = 0; ///< \deprecated Please use the postUnaryConstraint method instead
     virtual int postUnaryConstraint(int xIndex, Value* d, int dsize, Cost penalty) = 0;
     virtual int postSupxyc(int xIndex, int yIndex, Value cst, Value deltamax = MAX_VAL - MIN_VAL) = 0;
