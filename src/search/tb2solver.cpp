@@ -2152,10 +2152,8 @@ bool Solver::solve()
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-<<<<<<< HEAD
                                 cout << "Depth is now" << Store::getDepth() << endl;
                                 //wcsp->propagate();
-=======
                                 //vector<Cost> vc2{ 2, 1, 2, 1 };
                                 //wcsp->postIncrementalBinaryConstraint(0, 1, vc2); // add incremental constraint here using the extra pool of binary constraints (used for OTF elimination)
                                 //vector<Cost> vcu{ 0, 1 };
@@ -2165,7 +2163,6 @@ bool Solver::solve()
                                 cout << "Relaxed constraint added" << endl;
                                 wcsp->propagate();
                                 cout << "Propagation ok" << endl;
->>>>>>> [code] adding mdd relaxed constraint (not working)
                                 try {
                                     try {
                                         if (ToulBar2::isZ)

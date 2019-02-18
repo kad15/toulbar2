@@ -2134,13 +2134,8 @@ Cost WCSP::read_wcsp(const char* fileName)
                 }
             }
         }
-<<<<<<< HEAD
-        // Extra variables allocation
-        divVarsId.resize(ToulBar2::divNbSol - 1);
-=======
         // Variables allocation
         divVarsId.resize(ToulBar2::divNbSol);
->>>>>>> [code] adding mdd relaxed constraint (not working)
         for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
             for (Variable* x : divVariables) {
                 int xId = x->wcspIndex;
