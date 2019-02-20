@@ -145,9 +145,9 @@ public:
         public:
             TrieNode(size_t w = 0);
             ~TrieNode();
-            void insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos);
+            vector<vector<TrieNode*>> insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos);
             vector<TrieNode*> sons;
-            void insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos);
+            vector<vector<TrieNode*>> insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos);
             bool present(Value v);
             void printTrie(vector<Value>& sol);
             static size_t nbSolutions;
@@ -168,6 +168,7 @@ public:
     };
 
     Mdd computeMDD(Solver::SolutionTrie* solTrie, Cost cost);
+    std::ostream& printLayers(std::ostream& os, Mdd mdd);
 
     typedef enum {
         CP_ASSIGN = 0,

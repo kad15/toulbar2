@@ -1182,8 +1182,18 @@ void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 }
 void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 { //sol_j: to recognize the set of variables to use
-    int maxWidth = 50;
-    int nLayers = getDivVariables().size();
+    static const bool debug{ true };
+
+    if (debug)
+        cout << "Adding relaxed mdd constraint" << endl;
+    cout << "getUb " << getUb() << endl;
+
+    int maxWidth = 10;
+    vector<Variable*> varReverse;
+    for (unsigned v = 0; v < getDivVariables().size(); v++) {
+        varReverse.push_back(getDivVariables()[getDivVariables().size() - v - 1]);
+    }
+    int nLayers = varReverse.size();
     vector<Cost> vc;
     bool first_pos = true;
     EnumeratedVariable* x;
@@ -1193,44 +1203,54 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
     int cId;
     int cpId;
 
+    unsigned source;
+    unsigned target;
     for (int layer = 0; layer < nLayers; layer++) {
-        x = (EnumeratedVariable*)getDivVariables()[layer];
+        //cout << "layer " << layer << endl;
+        x = (EnumeratedVariable*)varReverse[layer];
         int xId = x->wcspIndex; //index of variable x
 
         // Add constraint between x and c_j_x
         cId = divVarsId[relaxed][xId]; //index of variable c
         c = (EnumeratedVariable*)getVar(cId);
         vc.clear();
-        for (unsigned source = 0; source < maxWidth; source++) {
-            for (unsigned target = 0; target < maxWidth; target++) {
-                for (auto weight : mdd[layer][source][target]) {
-                    vc.push_back(weight);
-                }
+        for (unsigned val_x = 0; val_x < x->getDomainInitSize(); val_x++) {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                source = val_c / (maxWidth);
+                target = val_c % maxWidth;
+                vc.push_back((source < mdd[layer].size() && target < mdd[layer][source].size()) ? mdd[layer][source][target][val_x] : getUb());
             }
         }
         postIncrementalBinaryConstraint(xId, cId, vc);
 
         vc.clear();
+        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+            source = val_c / (maxWidth);
+            target = val_c % maxWidth;
+            vc.push_back((source < mdd[layer].size() && target < mdd[layer][source].size()) ? MIN_COST : getUb());
+        }
+        postIncrementalUnaryConstraint(cId, vc);
+        vc.clear();
         if (first_pos) {
-            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
-                vc.push_back(((val_c / (maxWidth)) == 0) ? MIN_COST : getUb());
-            }
-            postIncrementalUnaryConstraint(cId, vc);
             first_pos = false;
         } else {
             // add binary constraint between cp and c
+
             for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
                 for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
-                    unsigned targetp = val_cp % (maxWidth);
-                    unsigned source = val_c / (maxWidth);
-                    vc.push_back((targetp == source) ? MIN_COST : getUb());
+                    target = val_cp % (maxWidth);
+                    source = val_c / (maxWidth);
+                    vc.push_back((target == source) ? MIN_COST : getUb());
                 }
             }
             postIncrementalBinaryConstraint(cpId, cId, vc);
+            vc.clear();
         }
         cp = c;
         cpId = cId;
     }
+    if (debug)
+        cout << "Relaxed constraint added" << endl;
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)

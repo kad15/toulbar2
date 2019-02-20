@@ -2134,7 +2134,7 @@ bool Solver::solve()
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
                             solTrie.init(wcsp->getDivVariables());
-                            int sol_j = 0;
+                            unsigned sol_j = 0;
 
                             do {
                                 cout << "Search " << sol_j + 1 << endl;
@@ -2149,9 +2149,16 @@ bool Solver::solve()
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                mdd = computeMDD(&solTrie, initialUb);
-                                wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol); //ToulBar2::divNbSol = index of the relaxed constraint
-                                cout << "Relaxed constraint added" << endl;
+                                if (sol_j > 1) {
+                                    mdd = computeMDD(&solTrie, initialUb);
+                                    cout << "MDD computed " << endl;
+
+                                    ofstream os(to_string(this) + "-wregular.dot");
+                                    printLayers(os, mdd);
+                                    os.close();
+
+                                    wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol - 1); //ToulBar2::divNbSol = index of the relaxed constraint
+                                }
                                 wcsp->propagate();
                                 cout << "Propagation ok" << endl;
                                 try {
@@ -2175,6 +2182,8 @@ bool Solver::solve()
                                 for (auto var : wcsp->getDivVariables()) {
                                     divSol.push_back(wcsp->getSolution()[var->wcspIndex]);
                                 }
+                                solTrie.insertSolution(divSol);
+                                cout << "solution added to solTrie" << endl;
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
@@ -2663,18 +2672,23 @@ bool Solver::SolutionTrie::TrieNode::present(Value v)
     return (sons[v] != NULL);
 }
 
-void Solver::SolutionTrie::TrieNode::insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos)
+vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos)
 {
     sons[v] = new TrieNode(widths[pos]);
     nodesAtPos[pos + 1].push_back(sons[v]);
+    return nodesAtPos;
 }
 
-void Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos)
+vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos)
 {
-    if (!present(sol[pos])) {
-        insertNode(sol[pos], pos, nodesAtPos);
+    if (pos < sol.size()) {
+        if (!present(sol[pos])) {
+            nodesAtPos = insertNode(sol[pos], pos, nodesAtPos);
+        }
+        return sons[sol[pos]]->insertSolution(sol, pos + 1, nodesAtPos);
+    } else {
+        return nodesAtPos;
     }
-    sons[sol[pos]]->insertSolution(sol, pos + 1, nodesAtPos);
 }
 
 void Solver::SolutionTrie::init(const vector<Variable*>& vv)
@@ -2706,7 +2720,7 @@ size_t Solver::SolutionTrie::TrieNode::nbSolutions = 0;
 
 void Solver::SolutionTrie::insertSolution(const vector<Value>& sol)
 {
-    root.insertSolution(sol, 0, nodesAtPos);
+    nodesAtPos = root.insertSolution(sol, 0, nodesAtPos);
 }
 
 void Solver::SolutionTrie::printTrie()
@@ -2717,24 +2731,25 @@ void Solver::SolutionTrie::printTrie()
 
 Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
 {
-    static const bool debug{ true };
-    int maxWidth = 50;
+    static const bool debug{ false };
+
+    int maxWidth = 10;
     //The SolutionTrie computes solution Prefix Tree, in divVariables order.
     // To merge equivalent nodes, we need the suffix tree, so we reverse the variables order.
     // variables
     vector<Variable*> varReverse;
-    for (int v = wcsp->getDivVariables().size(); v >= 0; v--) {
-        varReverse.push_back(wcsp->getDivVariables()[v]);
+    for (unsigned v = 0; v < wcsp->getDivVariables().size(); v++) {
+        varReverse.push_back(wcsp->getDivVariables()[wcsp->getDivVariables().size() - v - 1]);
     }
-
     int nLayers = varReverse.size();
     Mdd mdd(nLayers);
     vector<int> layerWidth;
     layerWidth.push_back(1);
     //solTrie
     vector<vector<Solver::SolutionTrie::TrieNode*>> nodesAtLayer;
-    for (auto pos = solTrie->getNodesAtPos().size() - 1; pos >= 0; pos--) {
-        nodesAtLayer.push_back(solTrie->getNodesAtPos()[pos]);
+
+    for (unsigned pos = 0; pos < solTrie->getNodesAtPos().size(); pos++) {
+        nodesAtLayer.push_back(solTrie->getNodesAtPos()[solTrie->getNodesAtPos().size() - pos - 1]);
     }
     map<vector<int>, int> DistCountsA;
     vector<int> initCount(nodesAtLayer[0].size(), 0);
@@ -2749,19 +2764,16 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
 
         EnumeratedVariable* x = (EnumeratedVariable*)varReverse[layer];
 
-        mdd[layer].resize(maxWidth);
-        for (int source = 0; source < maxWidth; source++) {
-            // Ca ne suffit pas! il faut pouvoir agrandir si on crée des couches plus grandes avant de les réduire!
+        mdd[layer].resize(prevDistCounts.size());
+        for (unsigned source = 0; source < prevDistCounts.size(); source++) {
             mdd[layer][source].resize(maxWidth);
-            for (int target = 0; target < maxWidth; target++) {
+            for (unsigned target = 0; target < maxWidth; target++) {
                 mdd[layer][source][target].resize(x->getDomainInitSize(), wcsp->getUb());
             }
         }
-        //resize arcs[layer] then arcs[layer][source] with max width ( domain size of cip and ci)
-        //and arcs[layer][source][target].resize(var->getDomainInitSize(),wcsp->getUb()), forall source,target.
 
-        int source;
-        int target;
+        unsigned source;
+        unsigned target;
         Cost toPay;
         for (auto const& nodeState : prevDistCounts) {
             if (debug) {
@@ -2774,13 +2786,13 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             source = nodeState.second;
             for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
                 vector<int> nextCount(nodesAtLayer[layer + 1].size(), -1);
-                for (auto node_index = 0; node_index < nodesAtLayer[layer + 1].size(); node_index++) {
+                for (unsigned node_index = 0; node_index < nodesAtLayer[layer + 1].size(); node_index++) {
                     auto node = nodesAtLayer[layer + 1][node_index];
-                    for (auto sol = 0; sol < node->sons.size(); sol++) { // node <---sol----nodep
+                    for (unsigned sol = 0; sol < node->sons.size(); sol++) { // node <---sol----nodep
                         auto nodep = node->sons[sol];
                         if (nodep != NULL) {
                             auto nodep_it = find(nodesAtLayer[layer].begin(), nodesAtLayer[layer].end(), nodep);
-                            int nodep_index = distance(nodep_it, nodesAtLayer[layer].begin());
+                            int nodep_index = distance(nodesAtLayer[layer].begin(), nodep_it);
                             assert(nodep_index < nodesAtLayer[layer].size());
 
                             if (nextCount[node_index] == -1) {
@@ -2800,7 +2812,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                         break;
                     }
                 }
-                nextCount.resize(nextCount.size(), 0);
+                if (!sat)
+                    nextCount.resize(nextCount.size(), 0);
                 if (layer != nLayers - 1) {
                     toPay = MIN_COST;
                     map<vector<int>, int>::iterator it;
@@ -2899,14 +2912,43 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 }
             }
         }
-        if (layer != nLayers - 1)
-            layerWidth.push_back(nextDistCounts.size());
-        else
-            layerWidth.push_back(1);
+        layerWidth.push_back((layer != nLayers - 1) ? nextDistCounts.size() : 1);
         prevDistCounts.clear();
         swap(prevDistCounts, nextDistCounts);
     }
     return mdd;
+}
+
+std::ostream& Solver::printLayers(std::ostream& os, Mdd mdd)
+{
+
+    os << "digraph \"wregular\" {" << endl;
+    os << "\tgraph [hierarchic=1];" << endl;
+    // Draw vertices
+    int nodeShift = 0;
+    for (unsigned layer = 0; layer < mdd.size(); layer++) {
+        for (unsigned node = 0; node < mdd[layer].size(); node++) {
+            os << "\t" << nodeShift + node << " [name=\"" << layer << "," << node << "\"];" << endl;
+        }
+        nodeShift += mdd[layer].size();
+    }
+    // and Arcs
+    nodeShift = 0;
+    for (unsigned layer = 0; layer < mdd.size(); layer++) {
+        for (unsigned source = 0; source < mdd[layer].size(); source++) {
+            for (unsigned target = 0; target < mdd[layer][source].size(); target++) {
+                for (unsigned val = 0; val < mdd[layer][source][target].size(); val++) {
+                    if (mdd[layer][source][target][val] < wcsp->getUb()) {
+                        os << "\t" << nodeShift + source << " -> " << nodeShift + mdd[layer].size() + target << " [label=\"";
+                        os << val << "," << mdd[layer][source][target][val] << "\"];" << endl;
+                    }
+                }
+            }
+        }
+        nodeShift += mdd[layer].size();
+    }
+    os << "}";
+    return os;
 }
 
 /* Local Variables: */
