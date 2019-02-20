@@ -2134,17 +2134,19 @@ Cost WCSP::read_wcsp(const char* fileName)
                 }
             }
         }
-        // Dual variables allocation
-        divVarsId.resize(ToulBar2::divNbSol);
-        for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
-            for (Variable* x : divVariables) {
-                int xId = x->wcspIndex;
-                divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
-                static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
+        // Dual variables allocation, only needed for divMethod 0 Dual or 1 Hidden
+        if (ToulBar2::divMethod < 2) {
+            divVarsId.resize(ToulBar2::divNbSol);
+            for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
+                for (Variable* x : divVariables) {
+                    int xId = x->wcspIndex;
+                    divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
+                    static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
+                }
             }
         }
-        // Hidden variables.
-        if (ToulBar2::divMethod == 1) {
+        // Hidden variables, only needed for divMethod 1 Hidden or 2 Ternary
+        if (ToulBar2::divMethod >= 1) {
             divHVarsId.resize(ToulBar2::divNbSol - 1); // make room for hidden state variables
             for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
                 bool first = true;
