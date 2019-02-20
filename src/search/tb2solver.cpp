@@ -2143,7 +2143,16 @@ bool Solver::solve()
 
                                 //get solution from previous solve ; sol_id = number of the last solution found
                                 if (sol_j > 0) {
-                                    wcsp->addDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
+                                    switch (ToulBar2::divMethod) {
+                                    case 0:
+                                        wcsp->addDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
+                                        break;
+                                    case 1:
+                                        wcsp->addHDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
+                                        break;
+                                    default:
+                                        cerr << "Error: no such diversity encoding method: " << ToulBar2::divMethod;
+                                    }
                                     wcsp->propagate();
                                 }
                                 sol_j += 1;
