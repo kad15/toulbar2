@@ -2123,6 +2123,7 @@ Cost WCSP::read_wcsp(const char* fileName)
     }
     // Diverse variables structure and variables allocation and initialization
     if (ToulBar2::divNbSol > 1) {
+        ToulBar2::nbDecisionVars = getVars().size();
         for (auto var : vars) {
             if ((var->getDomainSize() > 1) && (!ToulBar2::cfn || (!var->getName().empty() && var->getName()[0] == 'Z'))) {
                 if (var->enumerated()) {
