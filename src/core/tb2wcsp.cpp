@@ -1172,6 +1172,8 @@ void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
             }
             postIncrementalBinaryConstraint(hpId, xId, vc);
         } else {
+            hId = divHVarsId[sol_j][xId]; //index of variable h
+            h = (EnumeratedVariable*)getVar(hId);
             for (unsigned val_hp = 0; val_hp < hp->getDomainInitSize(); val_hp++) {
                 for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
                     for (unsigned val_h = 0; val_h < h->getDomainInitSize(); val_h++) {

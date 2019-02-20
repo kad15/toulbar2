@@ -2150,6 +2150,9 @@ bool Solver::solve()
                                     case 1:
                                         wcsp->addHDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
                                         break;
+                                    case 2:
+                                        wcsp->addTDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
+                                        break;
                                     default:
                                         cerr << "Error: no such diversity encoding method: " << ToulBar2::divMethod;
                                     }
@@ -2158,7 +2161,7 @@ bool Solver::solve()
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                if (sol_j > 1) {
+                                if (false) { //(sol_j > 1) {
                                     mdd = computeMDD(&solTrie, initialUb);
                                     cout << "MDD computed " << endl;
 
