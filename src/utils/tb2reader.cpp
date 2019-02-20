@@ -2149,6 +2149,7 @@ Cost WCSP::read_wcsp(const char* fileName)
             for (Variable* x : divVariables) {
                 int xId = x->wcspIndex;
                 divVarsId[j][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, maxWidth * maxWidth - 1);
+                static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
             }
         }
     }

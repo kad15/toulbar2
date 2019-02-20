@@ -401,6 +401,8 @@ public:
     void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs);
     void postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs);
     void addDivConstraint(vector<Value> solution, int sol_id, Cost cost); // to look for the (j+1)-th solution, with j = sol_id
+    void addHDivConstraint(vector<Value> solution, int sol_id, Cost cost);
+    void addTDivConstraint(vector<Value> solution, int sol_id, Cost cost);
     void addMDDConstraint(Mdd mdd, int relaxed);
     void addRelaxedConstraint(Solver::SolutionTrie solTrie, int sol_j, Cost cost);
 

@@ -973,7 +973,80 @@ void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, 
     xyz->propagate();
 }
 
+// Dual representation, Hamming, the dual variables have 2 (divBound + 1) values
+// each value represent a (d,d) or (d,d+1) transition except for the last two
+// that means we are beyond divBound.
 void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
+{
+    // add diversity constraint from solution sol_id
+    vector<Cost> vc;
+    EnumeratedVariable* ex;
+
+    EnumeratedVariable* c;
+    EnumeratedVariable* cp;
+    int cId;
+    int cpId;
+
+    bool first_pos = true;
+
+    for (Variable* x : divVariables) {
+        ex = (EnumeratedVariable*)x;
+        int xId = x->wcspIndex; //index of variable x
+
+        // Add constraint between x and c_j_x
+        cId = divVarsId[sol_j][xId]; //index of variable c
+        c = (EnumeratedVariable*)getVar(cId);
+
+        vc.clear();
+        for (auto val_x = 0; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
+            for (auto val_c = 0; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
+                // val_c = delta(divBound+1) + qp
+                unsigned delta = val_c / (ToulBar2::divBound + 1); // the first divBound+1 values of c (delta = 0) are (d,d) transitions, the rest is (d,d+1)
+                vc.push_back(((val_x != solution[xId]) == delta) ? MIN_COST : getUb());
+            }
+        }
+        //cout << "Adding binary constraint on " << ex->getName() << " and " << c->getName() << endl;
+        //cout << vc << endl;
+        postIncrementalBinaryConstraint(xId, cId, vc);
+
+        // Add constraint between c_j_x and c_j_x-1
+        vc.clear();
+        if (first_pos) {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                vc.push_back(((val_c % (ToulBar2::divBound + 1)) == 0) ? MIN_COST : getUb()); // allow only (0,0) and (0,1)
+            }
+            postIncrementalUnaryConstraint(cId, vc);
+            first_pos = false;
+        } else {
+            // add binary constraint between cp and c
+            for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
+                for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                    unsigned deltap = val_cp / (ToulBar2::divBound + 1); // 1 iff (d,d+1) on previous
+                    unsigned qp = val_cp % (ToulBar2::divBound + 1); // (d,.) on previous, so deltap+qp is (.,d/d+1)
+                    unsigned q = val_c % (ToulBar2::divBound + 1); // (d,.) on current
+                    vc.push_back((q == min(ToulBar2::divBound, qp + deltap)) ? MIN_COST : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(cpId, cId, vc);
+        }
+        cp = c;
+        cpId = cId;
+    }
+
+    //Unary constraint on last var_c to ensure diversity
+    if (!divVariables.empty()) {
+        vc.clear();
+        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+            unsigned q = val_c % (ToulBar2::divBound + 1);
+            unsigned delta = val_c / (ToulBar2::divBound + 1);
+            vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
+        }
+        postIncrementalUnaryConstraint(cId, vc);
+    }
+}
+
+// Hidden representation
+void WCSP::addHDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 {
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
@@ -1040,6 +1113,73 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
     }
 }
 
+// Ternary representation
+void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
+{
+    // add diversity constraint from solution sol_id
+    vector<Cost> vc;
+    bool first_pos = true;
+    EnumeratedVariable* ex;
+
+    EnumeratedVariable* c;
+    EnumeratedVariable* cp;
+    int cId;
+    int cpId;
+
+    for (Variable* x : divVariables) {
+        ex = (EnumeratedVariable*)x;
+        int xId = x->wcspIndex; //index of variable x
+
+        // Add constraint between x and c_j_x
+        cId = divVarsId[sol_j][xId]; //index of variable c
+        c = (EnumeratedVariable*)getVar(cId);
+
+        vc.clear();
+        for (unsigned val_x = 0; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
+                // val_c = delta(divBound+1) + qp
+                unsigned delta = val_c / (ToulBar2::divBound + 1);
+                vc.push_back(((val_x != solution[xId]) == delta) ? MIN_COST : getUb());
+            }
+        }
+        //cout << "Adding binary constraint on " << ex->getName() << " and " << c->getName() << endl;
+        //cout << vc << endl;
+        postIncrementalBinaryConstraint(xId, cId, vc);
+
+        // Add constraint between c_j_x and c_j_x-1
+        vc.clear();
+        if (first_pos) {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                vc.push_back(((val_c % (ToulBar2::divBound + 1)) == 0) ? MIN_COST : getUb());
+            }
+            postIncrementalUnaryConstraint(cId, vc);
+            first_pos = false;
+        } else {
+            // add binary constraint between cp and c
+            for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
+                for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                    unsigned deltap = val_cp / (ToulBar2::divBound + 1);
+                    unsigned qp = val_cp % (ToulBar2::divBound + 1);
+                    unsigned q = val_c % (ToulBar2::divBound + 1);
+                    vc.push_back((q == min(ToulBar2::divBound, qp + deltap)) ? MIN_COST : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(cpId, cId, vc);
+        }
+        cp = c;
+        cpId = cId;
+    }
+    //Unary constraint on last var_c to ensure diversity
+    if (!divVariables.empty()) {
+        vc.clear();
+        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+            unsigned q = val_c % (ToulBar2::divBound + 1);
+            unsigned delta = val_c / (ToulBar2::divBound + 1);
+            vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
+        }
+        postIncrementalUnaryConstraint(cId, vc);
+    }
+}
 void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 { //sol_j: to recognize the set of variables to use
     int maxWidth = 50;
