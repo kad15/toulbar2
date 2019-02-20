@@ -2134,13 +2134,21 @@ Cost WCSP::read_wcsp(const char* fileName)
                 }
             }
         }
-        // Extra variables allocation
-        divVarsId.resize(ToulBar2::divNbSol - 1);
+        // Variables allocation
+        divVarsId.resize(ToulBar2::divNbSol);
         for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
             for (Variable* x : divVariables) {
                 int xId = x->wcspIndex;
                 divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
                 static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
+            }
+        }
+        int maxWidth = 10;
+        if (maxWidth > 0) { //add variables for relaxed constraint
+            int j = ToulBar2::divNbSol - 1;
+            for (Variable* x : divVariables) {
+                int xId = x->wcspIndex;
+                divVarsId[j][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, maxWidth * maxWidth - 1);
             }
         }
     }

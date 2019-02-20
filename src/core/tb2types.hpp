@@ -718,6 +718,9 @@ public:
 typedef Set<Constraint> ConstraintSet;
 typedef Set<Variable> VariableSet;
 
+//For incremental diverse solution search - relaxed constraint
+typedef vector<vector<vector<vector<Cost>>>> Mdd; //mdd[layer][source][target][value] = label weight if source---val--->target exists, getUb otherwise
+
 #endif /*TB2TYPES_HPP_*/
 
 /* Local Variables: */

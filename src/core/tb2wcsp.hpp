@@ -11,6 +11,7 @@
 #include "tb2constraint.hpp"
 #include "tb2enumvar.hpp"
 #include "tb2intervar.hpp"
+#include "search/tb2solver.hpp"
 
 class NaryConstraint;
 class VACExtension;
@@ -400,6 +401,8 @@ public:
     void postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>& costs);
     void postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, vector<Cost>& costs);
     void addDivConstraint(vector<Value> solution, int sol_id, Cost cost); // to look for the (j+1)-th solution, with j = sol_id
+    void addMDDConstraint(Mdd mdd, int relaxed);
+    void addRelaxedConstraint(Solver::SolutionTrie solTrie, int sol_j, Cost cost);
 
     int postCliqueConstraint(int* scopeIndex, int arity, istream& file);
 
