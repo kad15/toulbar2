@@ -504,6 +504,7 @@ public:
     static unsigned int divNbSol;
     static vector<Cost> divMat;
     static unsigned int divBound;
+    static unsigned int divWidth;
     static Cost divCost;
 
     static bool singletonConsistency;

@@ -159,6 +159,7 @@ Cost ToulBar2::deltaUb;
 unsigned int ToulBar2::divNbSol;
 vector<Cost> ToulBar2::divMat;
 unsigned int ToulBar2::divBound;
+unsigned int ToulBar2::divWidth;
 Cost ToulBar2::divCost;
 BEP* ToulBar2::bep;
 bool ToulBar2::wcnf;

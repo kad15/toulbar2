@@ -244,6 +244,7 @@ enum {
     OPT_ub,
     OPT_ub_energy,
     OPT_divDist,
+    OPT_divWidth,
 
     // CPD options
     OPT_cpd,
@@ -472,6 +473,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_ub, (char*)"-ub", SO_REQ_SEP }, // init upper bound in cli
     { OPT_ub_energy, (char*)"-ubE", SO_OPT }, // init upper bound in cli (energy value) //TODO CFN FORMAT
     { OPT_divDist, (char*)"-div", SO_REQ_SEP }, // distance between solutions
+    { OPT_divWidth, (char*)"-divwidth", SO_REQ_SEP }, // max relaxed MDD width
 
     // MENDELSOFT
     { OPT_generation, (char*)"-g", SO_NONE }, //sort pedigree by increasing generation number and if equal by increasing individual number
@@ -2033,6 +2035,14 @@ int _tmain(int argc, TCHAR* argv[])
                     ToulBar2::allSolutions = 0;
                     if (ToulBar2::debug)
                         cout << "Diversity distance = " << ToulBar2::divBound << endl;
+                }
+            }
+
+            if (args.OptionId() == OPT_divWidth) {
+                if (args.OptionArg() != NULL) {
+                    ToulBar2::divWidth = atoi(args.OptionArg());
+                    if (ToulBar2::debug)
+                        cout << "Diversity MDD maximum width = " << ToulBar2::divWidth << endl;
                 }
             }
 
