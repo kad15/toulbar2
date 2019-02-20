@@ -2134,7 +2134,7 @@ Cost WCSP::read_wcsp(const char* fileName)
                 }
             }
         }
-        // Variables allocation
+        // Dual variables allocation
         divVarsId.resize(ToulBar2::divNbSol);
         for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
             for (Variable* x : divVariables) {
@@ -2143,6 +2143,23 @@ Cost WCSP::read_wcsp(const char* fileName)
                 static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
             }
         }
+        // Hidden variables.
+        if (ToulBar2::divMethod == 1) {
+            divHVarsId.resize(ToulBar2::divNbSol - 1); // make room for hidden state variables
+            for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
+                bool first = true;
+                int xId;
+                for (Variable* x : divVariables) {
+                    if (!first) {
+                        divHVarsId[j][xId] = makeEnumeratedVariable("h_sol" + std::to_string(j) + "_" + x->getName(), 0, ToulBar2::divBound + 1);
+                        static_cast<EnumeratedVariable*>(getVar(divHVarsId[j][xId]))->harden();
+                    }
+                    xId = x->wcspIndex;
+                    first = false;
+                }
+            }
+        }
+        // Joint DivMin MDD
         int maxWidth = 10;
         if (maxWidth > 0) { //add variables for relaxed constraint
             int j = ToulBar2::divNbSol - 1;
