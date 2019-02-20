@@ -2130,7 +2130,6 @@ bool Solver::solve()
                             }
                         } else {
                             initialDepth = Store::getDepth();
-                            cout << "Initial Depth is " << initialDepth << endl;
                             int initialDepth_cpy = initialDepth;
                             Cost initialUb = wcsp->getUb();
                             bool incrementalSearch = true;
@@ -2144,15 +2143,12 @@ bool Solver::solve()
                                 //get solution from previous solve ; sol_id = number of the last solution found
                                 if (sol_j > 0) {
                                     wcsp->addDivConstraint(wcsp->getSolution(), sol_j - 1, initialUb);
-                                    cout << "Diversity constraint added" << endl;
                                     wcsp->propagate();
-                                    cout << "Propagation ok" << endl;
                                 }
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                cout << "Depth is now" << Store::getDepth() << endl;
-                                //wcsp->propagate();
+                                wcsp->propagate();
                                 try {
                                     try {
                                         if (ToulBar2::isZ)
