@@ -1387,6 +1387,8 @@ bool EnumeratedVariable::canbeMerged(EnumeratedVariable* x)
 {
     if (ToulBar2::nbDecisionVars > 0 && wcspIndex < ToulBar2::nbDecisionVars)
         return false;
+    if (isSolid() && Store::getDepth() == 0)
+        return false;
     if (ToulBar2::allSolutions && wcspIndex < ToulBar2::nbvar && (ToulBar2::elimDegree >= 0 || ToulBar2::elimDegree_preprocessing >= 0))
         return false;
     double mult = (1.0 * x->getDomainSize()) / getDomainSize();
