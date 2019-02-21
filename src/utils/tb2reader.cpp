@@ -2135,6 +2135,7 @@ Cost WCSP::read_wcsp(const char* fileName)
                 }
             }
         }
+
         // Dual variables allocation, only needed for divMethod 0 Dual or 1 Hidden
         if (ToulBar2::divMethod < 2) {
             divVarsId.resize(ToulBar2::divNbSol);
@@ -2142,10 +2143,16 @@ Cost WCSP::read_wcsp(const char* fileName)
                 for (Variable* x : divVariables) {
                     int xId = x->wcspIndex;
                     divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
-                    static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
+                    EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]));
+                    theVar->harden();
+                    for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                        theVar->newValueName("q" + std::to_string(val % (ToulBar2::divBound + 1)) + ":"
+                            + std::to_string(min(ToulBar2::divBound, (val % (ToulBar2::divBound + 1)) + (val / (ToulBar2::divBound + 1)))));
+                    }
                 }
             }
         }
+
         // Hidden variables, only needed for divMethod 1 Hidden or 2 Ternary
         if (ToulBar2::divMethod >= 1) {
             divHVarsId.resize(ToulBar2::divNbSol - 1); // make room for hidden state variables
@@ -2155,18 +2162,28 @@ Cost WCSP::read_wcsp(const char* fileName)
                     if (!first) {
                         int xId = x->wcspIndex;
                         divHVarsId[j][xId] = makeEnumeratedVariable("h_sol" + std::to_string(j) + "_" + x->getName(), 0, ToulBar2::divBound);
-                        static_cast<EnumeratedVariable*>(getVar(divHVarsId[j][xId]))->harden();
+                        EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divHVarsId[j][xId]));
+                        theVar->harden();
+                        for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                            theVar->newValueName("q" + std::to_string(val));
+                        }
                     }
                     first = false;
                 }
             }
         }
+
+        // Joint DivMin MDD
         if (ToulBar2::divWidth > 0) { //add variables for relaxed constraint
             int j = ToulBar2::divNbSol - 1;
             for (Variable* x : divVariables) {
                 int xId = x->wcspIndex;
                 divVarsId[j][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, ToulBar2::divWidth * ToulBar2::divWidth - 1);
-                static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]))->harden();
+                EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]));
+                theVar->harden();
+                for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                    theVar->newValueName("Q" + std::to_string(val));
+                }
             }
         }
     }
