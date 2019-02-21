@@ -2195,6 +2195,7 @@ bool Solver::solve()
                                 cout << "divSol: " << divSol << endl;
                                 solTrie.insertSolution(divSol);
                                 cout << "solution added to solTrie" << endl;
+                                endSolve(wcsp->getUb() < initialUpperBound, wcsp->getUb(), !ToulBar2::limited);
                             } while (incrementalSearch); // this or an exception (no solution)
 #ifdef OPENMPI
                             if (ToulBar2::sequence_handler) {
@@ -2217,7 +2218,8 @@ bool Solver::solve()
     }
 
     //  Store::restore();         // see above for Store::store()
-    endSolve(wcsp->getUb() < initialUpperBound, wcsp->getUb(), !ToulBar2::limited);
+    if (ToulBar2::divBound == 0)
+        endSolve(wcsp->getUb() < initialUpperBound, wcsp->getUb(), !ToulBar2::limited);
     return (ToulBar2::isZ || ToulBar2::allSolutions || wcsp->getUb() < initialUpperBound);
 }
 
