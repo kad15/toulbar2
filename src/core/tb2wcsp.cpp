@@ -914,7 +914,7 @@ void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>&
     EnumeratedVariable* z = (EnumeratedVariable*)getVar(zIndex);
     EnumeratedVariable* y = (EnumeratedVariable*)getVar(yIndex);
     BinaryConstraint* yz = y->getConstr(z);
-    cout << "Post incremental binary constraint on " << z->getName() << " and " << y->getName() << endl;
+    //cout << "Post incremental binary constraint on " << z->getName() << " and " << y->getName() << endl;
 
     initElimConstr();
     BinaryConstraint* yznew = newBinaryConstr(y, z, NULL, NULL);
@@ -1192,7 +1192,7 @@ void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 
 void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 { //sol_j: to recognize the set of variables to use
-    static const bool debug{ true };
+    static const bool debug{ false };
 
     if (debug)
         cout << "Adding relaxed mdd constraint" << endl;

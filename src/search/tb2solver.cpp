@@ -2170,7 +2170,7 @@ bool Solver::solve()
                                     wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol - 1); //ToulBar2::divNbSol = index of the relaxed constraint
                                 }
                                 wcsp->propagate();
-                                cout << "Propagation ok" << endl;
+                                //cout << "Propagation ok" << endl;
                                 try {
                                     try {
                                         if (ToulBar2::isZ)
@@ -2754,7 +2754,6 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
         varReverse.push_back(wcsp->getDivVariables()[wcsp->getDivVariables().size() - v - 1]);
     }
     int nLayers = varReverse.size();
-    cout << "varReverse" << endl;
     Mdd mdd(nLayers);
     vector<int> layerWidth;
     layerWidth.push_back(1);
@@ -2880,6 +2879,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             //Merging nodes:TODO
             //Computing new state for merged nodes
             vector<int> newCount(nodesAtLayer[layer + 1].size(), -1);
+
+            vector<int> newTarget(nextDistCounts.size(), -1); //vector with new state nodes ids
             for (int state_index : to_merge) {
                 auto state_it = std::find_if(nextDistCounts.begin(), nextDistCounts.end(), [state_index](const pair<vector<int>, int>& mo) { return mo.second == state_index; });
                 assert(state_it != nextDistCounts.end());
@@ -2897,7 +2898,6 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             //The nodes need to be renumbered - we want nodeids = 0, 1 , ... , divWidth
             map<vector<int>, int>::iterator it;
             std::tie(it, std::ignore) = nextDistCounts.insert(pair<vector<int>, int>(newCount, to_merge[0]));
-            vector<int> newTarget(nextDistCounts.size(), -1); //vector with new state nodes ids
             int newNode = (*it).second;
             int nodeid = 0;
             for (auto state : nextDistCounts) {
