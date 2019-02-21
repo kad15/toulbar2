@@ -914,7 +914,7 @@ void WCSP::postIncrementalBinaryConstraint(int yIndex, int zIndex, vector<Cost>&
     EnumeratedVariable* z = (EnumeratedVariable*)getVar(zIndex);
     EnumeratedVariable* y = (EnumeratedVariable*)getVar(yIndex);
     BinaryConstraint* yz = y->getConstr(z);
-    //cout << "Post incremental binary constraint on " << z->getName() << " and " << y->getName() << endl;
+    cout << "Post incremental binary constraint on " << z->getName() << " and " << y->getName() << endl;
 
     initElimConstr();
     BinaryConstraint* yznew = newBinaryConstr(y, z, NULL, NULL);
@@ -1196,9 +1196,7 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 
     if (debug)
         cout << "Adding relaxed mdd constraint" << endl;
-    cout << "getUb " << getUb() << endl;
 
-    int maxWidth = 10;
     vector<Variable*> varReverse;
     for (unsigned v = 0; v < getDivVariables().size(); v++) {
         varReverse.push_back(getDivVariables()[getDivVariables().size() - v - 1]);
@@ -1216,7 +1214,8 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
     unsigned source;
     unsigned target;
     for (int layer = 0; layer < nLayers; layer++) {
-        //cout << "layer " << layer << endl;
+        if (debug)
+            cout << "layer " << layer << endl;
         x = (EnumeratedVariable*)varReverse[layer];
         int xId = x->wcspIndex; //index of variable x
 
@@ -1226,8 +1225,8 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
         vc.clear();
         for (unsigned val_x = 0; val_x < x->getDomainInitSize(); val_x++) {
             for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
-                source = val_c / (maxWidth);
-                target = val_c % maxWidth;
+                source = val_c / (ToulBar2::divWidth);
+                target = val_c % ToulBar2::divWidth;
                 vc.push_back((source < mdd[layer].size() && target < mdd[layer][source].size()) ? mdd[layer][source][target][val_x] : getUb());
             }
         }
@@ -1235,8 +1234,8 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 
         vc.clear();
         for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
-            source = val_c / (maxWidth);
-            target = val_c % maxWidth;
+            source = val_c / (ToulBar2::divWidth);
+            target = val_c % ToulBar2::divWidth;
             vc.push_back((source < mdd[layer].size() && target < mdd[layer][source].size()) ? MIN_COST : getUb());
         }
         postIncrementalUnaryConstraint(cId, vc);
@@ -1248,8 +1247,8 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
 
             for (unsigned val_cp = 0; val_cp < cp->getDomainInitSize(); val_cp++) {
                 for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
-                    target = val_cp % (maxWidth);
-                    source = val_c / (maxWidth);
+                    target = val_cp % (ToulBar2::divWidth);
+                    source = val_c / (ToulBar2::divWidth);
                     vc.push_back((target == source) ? MIN_COST : getUb());
                 }
             }

@@ -2161,13 +2161,14 @@ bool Solver::solve()
                                 sol_j += 1;
                                 incrementalSearch = (sol_j < ToulBar2::divNbSol);
                                 Store::store(); // protect the current CFN from changes by search or new cost functions
-                                if (false) { //(sol_j > 1) {
+                                if (ToulBar2::divWidth > 0 && sol_j > 1) {
+                                    cout << "computing mdd" << endl;
                                     mdd = computeMDD(&solTrie, initialUb);
                                     cout << "MDD computed " << endl;
 
-                                    ofstream os(to_string(this) + "-wregular.dot");
+                                    /*ofstream os(to_string(this) + "-wregular.dot");
                                     printLayers(os, mdd);
-                                    os.close();
+                                    os.close();*/
 
                                     wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol - 1); //ToulBar2::divNbSol = index of the relaxed constraint
                                 }
@@ -2194,6 +2195,7 @@ bool Solver::solve()
                                 for (auto var : wcsp->getDivVariables()) {
                                     divSol.push_back(wcsp->getSolution()[var->wcspIndex]);
                                 }
+                                cout << "divSol: " << divSol << endl;
                                 solTrie.insertSolution(divSol);
                                 cout << "solution added to solTrie" << endl;
                             } while (incrementalSearch); // this or an exception (no solution)
@@ -2686,7 +2688,7 @@ bool Solver::SolutionTrie::TrieNode::present(Value v)
 
 vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos)
 {
-    sons[v] = new TrieNode(widths[pos]);
+    sons[v] = new TrieNode(widths[pos + 1]);
     nodesAtPos[pos + 1].push_back(sons[v]);
     return nodesAtPos;
 }
@@ -2697,6 +2699,7 @@ vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::
         if (!present(sol[pos])) {
             nodesAtPos = insertNode(sol[pos], pos, nodesAtPos);
         }
+        assert(sol[pos] < sons.size());
         return sons[sol[pos]]->insertSolution(sol, pos + 1, nodesAtPos);
     } else {
         return nodesAtPos;
@@ -2708,6 +2711,7 @@ void Solver::SolutionTrie::init(const vector<Variable*>& vv)
     for (auto var : vv) {
         Solver::SolutionTrie::TrieNode::widths.push_back(((EnumeratedVariable*)var)->getDomainInitSize());
     }
+    Solver::SolutionTrie::TrieNode::widths.push_back(0); // for leaf nodes
     if (!vv.empty()) {
         root.sons.resize(Solver::SolutionTrie::TrieNode::widths[0], NULL);
         nodesAtPos.resize(vv.size() + 1);
@@ -2745,7 +2749,6 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
 {
     static const bool debug{ false };
 
-    int maxWidth = 10;
     //The SolutionTrie computes solution Prefix Tree, in divVariables order.
     // To merge equivalent nodes, we need the suffix tree, so we reverse the variables order.
     // variables
@@ -2754,6 +2757,7 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
         varReverse.push_back(wcsp->getDivVariables()[wcsp->getDivVariables().size() - v - 1]);
     }
     int nLayers = varReverse.size();
+    cout << "varReverse" << endl;
     Mdd mdd(nLayers);
     vector<int> layerWidth;
     layerWidth.push_back(1);
@@ -2770,6 +2774,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
     map<vector<int>, int>& prevDistCounts = DistCountsA;
     map<vector<int>, int>& nextDistCounts = DistCountsB;
 
+    vector<vector<Cost>> oldArcs; // for arcs redirection during relaxation
+
     for (int layer = 0; layer < nLayers; layer++) { // layer = arcs
         if (debug)
             cout << "building layer " << layer << endl;
@@ -2778,8 +2784,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
 
         mdd[layer].resize(prevDistCounts.size());
         for (unsigned source = 0; source < prevDistCounts.size(); source++) {
-            mdd[layer][source].resize(maxWidth);
-            for (unsigned target = 0; target < maxWidth; target++) {
+            mdd[layer][source].resize(ToulBar2::divWidth);
+            for (unsigned target = 0; target < ToulBar2::divWidth; target++) {
                 mdd[layer][source][target].resize(x->getDomainInitSize(), wcsp->getUb());
             }
         }
@@ -2846,17 +2852,21 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                     mdd[layer][source][target][val] = toPay;
                 } else {
                     vector<Cost> newTarget(x->getDomainInitSize(), wcsp->getUb());
-                    mdd[layer][source].push_back(newTarget);
+                    // when a new target appears in the mdd, we need to add all arcs from ALL sources!!
+                    for (int s = 0; s < mdd[layer].size(); s++) {
+                        mdd[layer][s].push_back(newTarget);
+                    }
+                    mdd[layer][source][target][val] = toPay;
                 }
             }
         }
         int nTargets = mdd[layer][source].size();
-        if (nTargets > maxWidth) {
+        if (nTargets > ToulBar2::divWidth) {
             if (debug)
                 cout << "Relaxing layer " << layer << endl;
             // select nodes at random for merging
             vector<int> to_merge;
-            int n_merge = nTargets - maxWidth + 1;
+            int n_merge = nTargets - ToulBar2::divWidth + 1;
             for (const auto& node : nextDistCounts)
                 to_merge.push_back(node.second);
             for (int i = 0; i < n_merge; ++i) {
@@ -2874,13 +2884,9 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             //Computing new state for merged nodes
             vector<int> newCount(nodesAtLayer[layer + 1].size(), -1);
             for (int state_index : to_merge) {
-                if (debug)
-                    cout << "node_index " << state_index << "(" << newCount.size() << ")" << endl;
                 auto state_it = std::find_if(nextDistCounts.begin(), nextDistCounts.end(), [state_index](const pair<vector<int>, int>& mo) { return mo.second == state_index; });
                 assert(state_it != nextDistCounts.end());
                 for (int nodeid = 0; nodeid < nodesAtLayer[layer + 1].size(); nodeid++) {
-                    if (debug)
-                        cout << "nodeid " << nodeid << endl;
                     if (newCount[nodeid] == -1) {
                         newCount[nodeid] = state_it->first[nodeid];
                     } else {
@@ -2891,35 +2897,42 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 }
                 nextDistCounts.erase(state_it->first);
             }
-            //The nodes need to be renumbered - we want nodeids = 0, 1 , ... , maxWidth
-            vector<int> newNodes(nextDistCounts.size(), -1); //vector with new state nodes ids
+            //The nodes need to be renumbered - we want nodeids = 0, 1 , ... , divWidth
             map<vector<int>, int>::iterator it;
             std::tie(it, std::ignore) = nextDistCounts.insert(pair<vector<int>, int>(newCount, to_merge[0]));
+            vector<int> newTarget(nextDistCounts.size(), -1); //vector with new state nodes ids
             int newNode = (*it).second;
             int nodeid = 0;
             for (auto state : nextDistCounts) {
                 if (state.second == newNode) {
-                    newNodes[newNode] = nodeid;
+                    newTarget[newNode] = nodeid;
                     for (auto node : to_merge) {
-                        newNodes[node] = nodeid;
+                        newTarget[node] = nodeid;
                     }
                 } else {
-                    newNodes[state.second] = nodeid;
+                    newTarget[state.second] = nodeid;
                 }
                 nextDistCounts[state.first] = nodeid;
                 nodeid++;
             }
             //redirecting arcs in mdd[layer] from each source to new targets
-            vector<vector<Cost>> oldArcs;
+            if (debug)
+                cout << "redirecting arcs " << endl;
             for (auto source = 0; source < mdd[layer].size(); source++) {
+                if (debug)
+                    cout << "source " << source << endl;
+                oldArcs.clear();
                 oldArcs = mdd[layer][source];
                 mdd[layer][source].resize(nodeid);
-                for (auto newarcs : mdd[layer][source]) {
-                    newarcs.resize(0);
+                for (auto target = 0; target < nodeid; target++) {
+                    mdd[layer][source][target].resize(x->getDomainInitSize());
+                    for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
+                        mdd[layer][source][target][val] = wcsp->getUb(); // erase all arcs from source
+                    }
                 }
                 for (auto oldTarget = 0; oldTarget < oldArcs.size(); oldTarget++) {
-                    for (auto arc : oldArcs[oldTarget]) {
-                        mdd[layer][source][newNodes[oldTarget]].push_back(arc);
+                    for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
+                        mdd[layer][source][newTarget[oldTarget]][val] = min(mdd[layer][source][newTarget[oldTarget]][val], oldArcs[oldTarget][val]);
                     }
                 }
             }
