@@ -160,7 +160,7 @@ unsigned int ToulBar2::divNbSol;
 vector<Cost> ToulBar2::divMat;
 unsigned int ToulBar2::divBound;
 unsigned int ToulBar2::divWidth;
-unsigned int ToulBar2::divMethod = 0; // 0: Dual, 1: Hidden, 2: Ternary
+unsigned int ToulBar2::divMethod = 1; // 0: Dual, 1: Hidden, 2: Ternary
 Cost ToulBar2::divCost;
 
 BEP* ToulBar2::bep;
@@ -980,6 +980,7 @@ void WCSP::postIncrementalTernaryConstraint(int xIndex, int yIndex, int zIndex, 
 // that means we are beyond divBound.
 void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 {
+    cout << "adding diversity constraint (dual) " << endl;
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     EnumeratedVariable* ex;
@@ -991,17 +992,17 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 
     bool first_pos = true;
 
-    for (Variable* x : divVariables) {
+    for (Variable* x : getDivVariables()) {
+
         ex = (EnumeratedVariable*)x;
         int xId = x->wcspIndex; //index of variable x
 
         // Add constraint between x and c_j_x
         cId = divVarsId[sol_j][xId]; //index of variable c
         c = (EnumeratedVariable*)getVar(cId);
-
         vc.clear();
-        for (unsigned val_x = 0U; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
-            for (unsigned val_c = 0U; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
+        for (unsigned val_x = 0; val_x < ex->getDomainInitSize(); val_x++) { //val_x = value index ?
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) { // Si les domaines sont réduits, ça ne marche pas!
                 // val_c = delta(divBound+1) + qp
                 unsigned delta = val_c / (ToulBar2::divBound + 1); // the first divBound+1 values of c (delta = 0) are (d,d) transitions, the rest is (d,d+1)
                 vc.push_back(((val_x != (unsigned)solution[xId]) == delta) ? MIN_COST : getUb());
@@ -1036,13 +1037,14 @@ void WCSP::addDivConstraint(vector<Value> solution, int sol_j, Cost cost)
     }
 
     //Unary constraint on last var_c to ensure diversity
-    if (!divVariables.empty()) {
+    if (!getDivVariables().empty()) {
         vc.clear();
         for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
             unsigned q = val_c % (ToulBar2::divBound + 1);
             unsigned delta = val_c / (ToulBar2::divBound + 1);
             vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
         }
+        cout << "Unary constraint" << endl;
         postIncrementalUnaryConstraint(cId, vc);
     }
 }
