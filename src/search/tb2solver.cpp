@@ -1408,18 +1408,15 @@ void Solver::newSolution()
                     ToulBar2::haplotype->printHaplotype(cout, wcsp->getValue(i), i);
                 } else if (ToulBar2::cfn) {
                     Value myvalue = ((ToulBar2::sortDomains && ToulBar2::sortedDomains.find(i) != ToulBar2::sortedDomains.end()) ? ToulBar2::sortedDomains[i][wcsp->toIndex(i, wcsp->getValue(i))].value : wcsp->getValue(i));
-                    string valuelabel = ((WCSP*)wcsp)->getVar(i)->getValueName(myvalue);
-                    string varlabel = wcsp->getName(i);
-
                     switch (ToulBar2::showSolutions) {
                     case 1:
                         cout << myvalue;
                         break;
                     case 2:
-                        cout << valuelabel;
+                        cout << ((WCSP*)wcsp)->getVar(i)->getValueName(myvalue);
                         break;
                     case 3:
-                        cout << varlabel << "=" << valuelabel;
+                        cout << wcsp->getName(i) << "=" << ((WCSP*)wcsp)->getVar(i)->getValueName(myvalue);
                         break;
                     default:
                         break;
