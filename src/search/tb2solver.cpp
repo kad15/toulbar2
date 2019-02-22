@@ -2772,7 +2772,10 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
     map<vector<int>, int>& prevDistCounts = DistCountsA;
     map<vector<int>, int>& nextDistCounts = DistCountsB;
 
+    //for relaxation
     vector<vector<Cost>> oldArcs; // for arcs redirection during relaxation
+    vector<vector<Cost>> alphap(nLayers + 1); // if divRelax=3, alphap[layer][node] = smallest path weight from root to node, with unary costs.
+    alphap[0].push_back(0); // alphap at root = 0
 
     for (int layer = 0; layer < nLayers; layer++) { // layer = arcs
         if (debug)
@@ -2858,7 +2861,7 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 }
             }
         }
-        int nTargets = mdd[layer][source].size();
+        int nTargets = nextDistCounts.size();
         if (nTargets > ToulBar2::divWidth) {
             if (debug)
                 cout << "Relaxing layer " << layer << endl;
@@ -2898,7 +2901,23 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                     cout << ")" << endl;
                 }
             } else if (ToulBar2::divRelax == 3) {
-                cout << "Not available for now" << endl;
+                cout << "init" << endl;
+                vector<Cost> alphaptmp(nTargets, wcsp->getUb());
+                for (unsigned source = 0; source < mdd[layer].size(); source++) {
+                    for (unsigned target = 0; target < mdd[layer][source].size(); target++) {
+                        for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
+                            alphaptmp[target] = min(alphaptmp[target], alphap[layer][source] + mdd[layer][source][target][val] + x->getCost(x->toValue(val)));
+                        }
+                    }
+                }
+                auto comparator = [alphaptmp](int a, int b) { return alphaptmp[a] > alphaptmp[b]; };
+                std::sort(to_merge.begin(), to_merge.end(), comparator);
+                if (debug) {
+                    cout << "alphap[" << layer << "]=( ";
+                    for (int i : alphaptmp)
+                        cout << i << " ";
+                    cout << ")" << endl;
+                }
             } else {
                 cerr << "Error: no such relaxing method: " << ToulBar2::divRelax;
             }
@@ -2968,6 +2987,24 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 }
             }
         }
+        if (ToulBar2::divWidth > 0 && ToulBar2::divRelax == 3 && layer != nLayers - 1) {
+            //Computing alphap[layer+1]
+            alphap[layer + 1].resize(ToulBar2::divWidth, wcsp->getUb());
+            for (unsigned source = 0; source < mdd[layer].size(); source++) {
+                for (unsigned target = 0; target < mdd[layer][source].size(); target++) {
+                    for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
+                        /*if (debug) {
+                            cout << "alphap[" << layer + 1 << "][" << target << "] is " << alphap[layer + 1][target];
+                            cout << " compared to " << alphap[layer][source] << "+" << mdd[layer][source][target][val] << "+" << x->getCost(x->toValue(val)) << endl;
+                        }*/
+                        alphap[layer + 1][target] = min(alphap[layer + 1][target], alphap[layer][source] + mdd[layer][source][target][val] + x->getCost(x->toValue(val)));
+                        //if (debug)
+                        //cout << "=> set to " << alphap[layer + 1][target] << endl;
+                    }
+                }
+            }
+        }
+
         layerWidth.push_back((layer != nLayers - 1) ? nextDistCounts.size() : 1);
         prevDistCounts.clear();
         swap(prevDistCounts, nextDistCounts);

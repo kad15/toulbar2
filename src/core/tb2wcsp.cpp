@@ -161,7 +161,7 @@ vector<Cost> ToulBar2::divMat;
 unsigned int ToulBar2::divBound;
 unsigned int ToulBar2::divWidth;
 unsigned int ToulBar2::divMethod = 0; // 0: Dual, 1: Hidden, 2: Ternary
-unsigned int ToulBar2::divRelax = 2; // 0: random, 1: high div, 2: small div, 3: high unary costs
+unsigned int ToulBar2::divRelax = 1; // 0: random, 1: high div, 2: small div, 3: high unary costs
 Cost ToulBar2::divCost;
 
 BEP* ToulBar2::bep;
