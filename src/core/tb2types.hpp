@@ -506,6 +506,7 @@ public:
     static unsigned int divBound;
     static unsigned int divWidth;
     static unsigned int divMethod;
+    static unsigned int divRelax;
     static Cost divCost;
 
     static bool singletonConsistency;

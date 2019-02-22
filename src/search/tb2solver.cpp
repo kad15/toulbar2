@@ -2862,15 +2862,47 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
         if (nTargets > ToulBar2::divWidth) {
             if (debug)
                 cout << "Relaxing layer " << layer << endl;
-            // select nodes at random for merging
-            vector<int> to_merge;
+            // select nodes for merging
             int n_merge = nTargets - ToulBar2::divWidth + 1;
-            for (const auto& node : nextDistCounts)
-                to_merge.push_back(node.second);
-            for (int i = 0; i < n_merge; ++i) {
-                int j = myrand() % (nextDistCounts.size() - i);
-                std::swap(to_merge[i], to_merge[i + j]);
+            vector<int> to_merge(nextDistCounts.size(), -1);
+            iota(to_merge.begin(), to_merge.end(), 0);
+            if (ToulBar2::divRelax == 0) {
+                for (int i = 0; i < n_merge; ++i) {
+                    int j = myrand() % (nextDistCounts.size() - i);
+                    std::swap(to_merge[i], to_merge[i + j]);
+                }
+            } else if (ToulBar2::divRelax == 1) {
+                vector<int> stateDiv(nextDistCounts.size());
+                for (const auto& node : nextDistCounts) {
+                    stateDiv[node.second] = accumulate(node.first.begin(), node.first.end(), 0);
+                }
+                auto comparator = [stateDiv](int a, int b) { return stateDiv[a] > stateDiv[b]; };
+                std::sort(to_merge.begin(), to_merge.end(), comparator);
+                if (debug) {
+                    cout << "stateDiv[" << layer << "]=( ";
+                    for (int i : stateDiv)
+                        cout << i << " ";
+                    cout << ")" << endl;
+                }
+            } else if (ToulBar2::divRelax == 2) {
+                vector<int> stateDiv(nextDistCounts.size());
+                for (const auto& node : nextDistCounts) {
+                    stateDiv[node.second] = accumulate(node.first.begin(), node.first.end(), 0);
+                }
+                auto comparator = [stateDiv](int a, int b) { return stateDiv[a] < stateDiv[b]; };
+                std::sort(to_merge.begin(), to_merge.end(), comparator);
+                if (debug) {
+                    cout << "stateDiv[" << layer << "]=( ";
+                    for (int i : stateDiv)
+                        cout << i << " ";
+                    cout << ")" << endl;
+                }
+            } else if (ToulBar2::divRelax == 3) {
+                cout << "Not available for now" << endl;
+            } else {
+                cerr << "Error: no such relaxing method: " << ToulBar2::divRelax;
             }
+
             to_merge.resize(n_merge);
             if (debug) {
                 cout << "Merging nodes ";
