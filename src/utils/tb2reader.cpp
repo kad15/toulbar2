@@ -2145,7 +2145,7 @@ Cost WCSP::read_wcsp(const char* fileName)
                     divVarsId[j][xId] = makeEnumeratedVariable("c_sol" + std::to_string(j) + "_" + x->getName(), 0, 2 * ToulBar2::divBound + 1);
                     EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]));
                     theVar->harden();
-                    for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                    for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
                         theVar->newValueName("q" + std::to_string(val % (ToulBar2::divBound + 1)) + ":"
                             + std::to_string(min(ToulBar2::divBound, (val % (ToulBar2::divBound + 1)) + (val / (ToulBar2::divBound + 1)))));
                     }
@@ -2164,7 +2164,7 @@ Cost WCSP::read_wcsp(const char* fileName)
                         divHVarsId[j][xId] = makeEnumeratedVariable("h_sol" + std::to_string(j) + "_" + x->getName(), 0, ToulBar2::divBound);
                         EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divHVarsId[j][xId]));
                         theVar->harden();
-                        for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                        for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
                             theVar->newValueName("q" + std::to_string(val));
                         }
                     }
@@ -2181,7 +2181,7 @@ Cost WCSP::read_wcsp(const char* fileName)
                 divVarsId[j][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, ToulBar2::divWidth * ToulBar2::divWidth - 1);
                 EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]));
                 theVar->harden();
-                for (int val = 0; val < theVar->getDomainInitSize(); val++) {
+                for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
                     theVar->newValueName("Q" + std::to_string(val));
                 }
             }

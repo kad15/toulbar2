@@ -160,8 +160,8 @@ unsigned int ToulBar2::divNbSol;
 vector<Cost> ToulBar2::divMat;
 unsigned int ToulBar2::divBound;
 unsigned int ToulBar2::divWidth;
-unsigned int ToulBar2::divMethod = 0; // 0: Dual, 1: Hidden, 2: Ternary
-unsigned int ToulBar2::divRelax = 1; // 0: random, 1: high div, 2: small div, 3: high unary costs
+unsigned int ToulBar2::divMethod = 2; // 0: Dual, 1: Hidden, 2: Ternary
+unsigned int ToulBar2::divRelax = 0; // 0: random, 1: high div, 2: small div, 3: high unary costs
 Cost ToulBar2::divCost;
 
 BEP* ToulBar2::bep;
@@ -1141,6 +1141,10 @@ void WCSP::addHDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 // Ternary representation
 void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
 {
+    static const bool debug{ false };
+    if (debug)
+        cout << "Add diversity constraint (ternary decomposition)" << endl;
+
     // add diversity constraint from solution sol_id
     vector<Cost> vc;
     EnumeratedVariable* ex;
@@ -1180,7 +1184,8 @@ void WCSP::addTDivConstraint(vector<Value> solution, int sol_j, Cost cost)
             for (unsigned val_hp = 0; val_hp < hp->getDomainInitSize(); val_hp++) {
                 for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
                     for (unsigned val_h = 0; val_h < h->getDomainInitSize(); val_h++) {
-                        vc.push_back((val_hp + (val_ex != (unsigned)solution[xId]) == val_h) ? MIN_COST : getUb());
+                        //cout << "hp " << val_hp << " x " << val_ex << " h " << val_h << "(" << ((val_hp + (val_ex != (unsigned)solution[xId]) == val_h) ? MIN_COST : getUb()) << ")" << endl;
+                        vc.push_back((min(ToulBar2::divBound, val_hp + (val_ex != (unsigned)solution[xId])) == val_h) ? MIN_COST : getUb());
                     }
                 }
             }

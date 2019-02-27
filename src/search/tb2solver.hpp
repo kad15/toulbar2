@@ -145,9 +145,9 @@ public:
         public:
             TrieNode(size_t w = 0);
             ~TrieNode();
-            vector<vector<TrieNode*>> insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos);
+            vector<vector<TrieNode*>> insertSolution(const vector<Value>& sol, unsigned int pos, vector<vector<TrieNode*>> nodesAtPos);
             vector<TrieNode*> sons;
-            vector<vector<TrieNode*>> insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos);
+            vector<vector<TrieNode*>> insertNode(Value v, unsigned int pos, vector<vector<TrieNode*>> nodesAtPos);
             bool present(Value v);
             void printTrie(vector<Value>& sol);
             static size_t nbSolutions;

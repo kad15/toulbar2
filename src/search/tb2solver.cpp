@@ -2685,20 +2685,20 @@ bool Solver::SolutionTrie::TrieNode::present(Value v)
     return (sons[v] != NULL);
 }
 
-vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertNode(Value v, int pos, vector<vector<TrieNode*>> nodesAtPos)
+vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertNode(Value v, unsigned int pos, vector<vector<TrieNode*>> nodesAtPos)
 {
     sons[v] = new TrieNode(widths[pos + 1]);
     nodesAtPos[pos + 1].push_back(sons[v]);
     return nodesAtPos;
 }
 
-vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, int pos, vector<vector<TrieNode*>> nodesAtPos)
+vector<vector<Solver::SolutionTrie::TrieNode*>> Solver::SolutionTrie::TrieNode::insertSolution(const vector<Value>& sol, unsigned int pos, vector<vector<TrieNode*>> nodesAtPos)
 {
     if (pos < sol.size()) {
         if (!present(sol[pos])) {
             nodesAtPos = insertNode(sol[pos], pos, nodesAtPos);
         }
-        assert(sol[pos] < sons.size());
+        assert((unsigned)sol[pos] < sons.size());
         return sons[sol[pos]]->insertSolution(sol, pos + 1, nodesAtPos);
     } else {
         return nodesAtPos;
@@ -2811,7 +2811,7 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                         auto nodep = node->sons[sol];
                         if (nodep != NULL) {
                             auto nodep_it = find(nodesAtLayer[layer].begin(), nodesAtLayer[layer].end(), nodep);
-                            int nodep_index = distance(nodesAtLayer[layer].begin(), nodep_it);
+                            unsigned nodep_index = distance(nodesAtLayer[layer].begin(), nodep_it);
                             assert(nodep_index < nodesAtLayer[layer].size());
 
                             if (nextCount[node_index] == -1) {
@@ -2825,8 +2825,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 }
                 //merge nodes that won't lead to a satisfying solution:
                 bool sat = true;
-                for (auto count : nextCount) {
-                    if (count < ToulBar2::divBound + layer - nLayers) {
+                for (int count : nextCount) {
+                    if (count < (int)ToulBar2::divBound + layer - nLayers) {
                         sat = false;
                         break;
                     }
@@ -2842,8 +2842,8 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                     toPay = MIN_COST;
                     target = 0;
                     assert(layer + 1 == nLayers);
-                    for (auto count : nextCount) {
-                        if (count < ToulBar2::divBound) {
+                    for (int count : nextCount) {
+                        if (count < (int)ToulBar2::divBound) {
                             toPay = cost;
                             break;
                         }
@@ -2854,14 +2854,14 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                 } else {
                     vector<Cost> newTarget(x->getDomainInitSize(), wcsp->getUb());
                     // when a new target appears in the mdd, we need to add all arcs from ALL sources!!
-                    for (int s = 0; s < mdd[layer].size(); s++) {
+                    for (unsigned s = 0; s < mdd[layer].size(); s++) {
                         mdd[layer][s].push_back(newTarget);
                     }
                     mdd[layer][source][target][val] = toPay;
                 }
             }
         }
-        int nTargets = nextDistCounts.size();
+        unsigned nTargets = nextDistCounts.size();
         if (nTargets > ToulBar2::divWidth) {
             if (debug)
                 cout << "Relaxing layer " << layer << endl;
@@ -2901,7 +2901,6 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
                     cout << ")" << endl;
                 }
             } else if (ToulBar2::divRelax == 3) {
-                cout << "init" << endl;
                 vector<Cost> alphaptmp(nTargets, wcsp->getUb());
                 for (unsigned source = 0; source < mdd[layer].size(); source++) {
                     for (unsigned target = 0; target < mdd[layer][source].size(); target++) {
@@ -2937,7 +2936,7 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             for (int state_index : to_merge) {
                 auto state_it = std::find_if(nextDistCounts.begin(), nextDistCounts.end(), [state_index](const pair<vector<int>, int>& mo) { return mo.second == state_index; });
                 assert(state_it != nextDistCounts.end());
-                for (int nodeid = 0; nodeid < nodesAtLayer[layer + 1].size(); nodeid++) {
+                for (unsigned nodeid = 0; nodeid < nodesAtLayer[layer + 1].size(); nodeid++) {
                     if (newCount[nodeid] == -1) {
                         newCount[nodeid] = state_it->first[nodeid];
                     } else {
@@ -2952,7 +2951,7 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             map<vector<int>, int>::iterator it;
             std::tie(it, std::ignore) = nextDistCounts.insert(pair<vector<int>, int>(newCount, to_merge[0]));
             int newNode = (*it).second;
-            int nodeid = 0;
+            unsigned nodeid = 0;
             for (auto state : nextDistCounts) {
                 if (state.second == newNode) {
                     newTarget[newNode] = nodeid;
@@ -2968,19 +2967,19 @@ Mdd Solver::computeMDD(Solver::SolutionTrie* solTrie, Cost cost)
             //redirecting arcs in mdd[layer] from each source to new targets
             if (debug)
                 cout << "redirecting arcs " << endl;
-            for (auto source = 0; source < mdd[layer].size(); source++) {
+            for (unsigned source = 0; source < mdd[layer].size(); source++) {
                 if (debug)
                     cout << "source " << source << endl;
                 oldArcs.clear();
                 oldArcs = mdd[layer][source];
                 mdd[layer][source].resize(nodeid);
-                for (auto target = 0; target < nodeid; target++) {
+                for (unsigned target = 0; target < nodeid; target++) {
                     mdd[layer][source][target].resize(x->getDomainInitSize());
                     for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
                         mdd[layer][source][target][val] = wcsp->getUb(); // erase all arcs from source
                     }
                 }
-                for (auto oldTarget = 0; oldTarget < oldArcs.size(); oldTarget++) {
+                for (unsigned oldTarget = 0; oldTarget < oldArcs.size(); oldTarget++) {
                     for (unsigned val = 0; val < x->getDomainInitSize(); val++) {
                         mdd[layer][source][newTarget[oldTarget]][val] = min(mdd[layer][source][newTarget[oldTarget]][val], oldArcs[oldTarget][val]);
                     }
