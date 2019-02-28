@@ -160,7 +160,7 @@ unsigned int ToulBar2::divNbSol;
 vector<Cost> ToulBar2::divMat;
 unsigned int ToulBar2::divBound;
 unsigned int ToulBar2::divWidth;
-unsigned int ToulBar2::divMethod = 2; // 0: Dual, 1: Hidden, 2: Ternary
+unsigned int ToulBar2::divMethod = 0; // 0: Dual, 1: Hidden, 2: Ternary
 unsigned int ToulBar2::divRelax = 0; // 0: random, 1: high div, 2: small div, 3: high unary costs
 Cost ToulBar2::divCost;
 
@@ -1057,11 +1057,11 @@ void WCSP::addHDivConstraint(vector<Value> solution, int sol_j, Cost cost)
     vector<Cost> vc;
     EnumeratedVariable* ex;
 
-    EnumeratedVariable* c;
+    EnumeratedVariable* c = NULL;
     EnumeratedVariable* h = NULL;
     EnumeratedVariable* hp = NULL;
 
-    int cId;
+    int cId = -1;
     int hId = -1;
     int hpId = -1;
 
