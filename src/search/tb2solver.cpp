@@ -2166,11 +2166,21 @@ bool Solver::solve()
                                     /*ofstream os(to_string(this) + "-wregular.dot");
                                     printLayers(os, mdd);
                                     os.close();*/
-
-                                    wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol - 1); //ToulBar2::divNbSol = index of the relaxed constraint
+                                    switch (ToulBar2::divMethod) {
+                                    case 0:
+                                        wcsp->addMDDConstraint(mdd, ToulBar2::divNbSol - 1); //ToulBar2::divNbSol = index of the relaxed constraint
+                                        break;
+                                    case 1:
+                                        wcsp->addHMDDConstraint(mdd, ToulBar2::divNbSol - 1);
+                                        break;
+                                    case 2:
+                                        wcsp->addTMDDConstraint(mdd, ToulBar2::divNbSol - 1);
+                                        break;
+                                    default:
+                                        cerr << "Error: no such diversity encoding method: " << ToulBar2::divMethod;
+                                    }
+                                    wcsp->propagate();
                                 }
-                                wcsp->propagate();
-                                //cout << "Propagation ok" << endl;
                                 try {
                                     try {
                                         if (ToulBar2::isZ)

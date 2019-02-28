@@ -2155,7 +2155,7 @@ Cost WCSP::read_wcsp(const char* fileName)
 
         // Hidden variables, only needed for divMethod 1 Hidden or 2 Ternary
         if (ToulBar2::divMethod >= 1) {
-            divHVarsId.resize(ToulBar2::divNbSol - 1); // make room for hidden state variables
+            divHVarsId.resize(ToulBar2::divNbSol); // make room for hidden state variables
             for (unsigned j = 0; j < ToulBar2::divNbSol - 1; j++) {
                 bool first = true;
                 for (Variable* x : divVariables) {
@@ -2175,14 +2175,26 @@ Cost WCSP::read_wcsp(const char* fileName)
 
         // Joint DivMin MDD
         if (ToulBar2::divWidth > 0) { //add variables for relaxed constraint
-            int j = ToulBar2::divNbSol - 1;
-            for (Variable* x : divVariables) {
-                int xId = x->wcspIndex;
-                divVarsId[j][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, ToulBar2::divWidth * ToulBar2::divWidth - 1);
-                EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[j][xId]));
-                theVar->harden();
-                for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
-                    theVar->newValueName("Q" + std::to_string(val));
+            if (ToulBar2::divMethod < 2) {
+                for (Variable* x : divVariables) {
+                    int xId = x->wcspIndex;
+                    divVarsId[ToulBar2::divNbSol - 1][xId] = makeEnumeratedVariable("c_relax_" + x->getName(), 0, ToulBar2::divWidth * ToulBar2::divWidth - 1);
+                    EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divVarsId[ToulBar2::divNbSol - 1][xId]));
+                    theVar->harden();
+                    for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
+                        theVar->newValueName("Q" + std::to_string(val));
+                    }
+                }
+            }
+            if (ToulBar2::divMethod >= 1) {
+                for (Variable* x : divVariables) {
+                    int xId = x->wcspIndex;
+                    divHVarsId[ToulBar2::divNbSol - 1][xId] = makeEnumeratedVariable("h_relax_" + x->getName(), 0, ToulBar2::divWidth - 1);
+                    EnumeratedVariable* theVar = static_cast<EnumeratedVariable*>(getVar(divHVarsId[ToulBar2::divNbSol - 1][xId]));
+                    theVar->harden();
+                    for (unsigned val = 0; val < theVar->getDomainInitSize(); val++) {
+                        theVar->newValueName("q" + std::to_string(val));
+                    }
                 }
             }
         }

@@ -405,7 +405,8 @@ public:
     void addHDivConstraint(vector<Value> solution, int sol_id, Cost cost);
     void addTDivConstraint(vector<Value> solution, int sol_id, Cost cost);
     void addMDDConstraint(Mdd mdd, int relaxed);
-    void addRelaxedConstraint(Solver::SolutionTrie solTrie, int sol_j, Cost cost);
+    void addHMDDConstraint(Mdd mdd, int relaxed);
+    void addTMDDConstraint(Mdd mdd, int relaxed);
 
     int postCliqueConstraint(int* scopeIndex, int arity, istream& file);
 

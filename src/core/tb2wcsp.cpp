@@ -1132,8 +1132,8 @@ void WCSP::addHDivConstraint(vector<Value> solution, int sol_j, Cost cost)
             unsigned delta = val_c / (ToulBar2::divBound + 1);
             vc.push_back(q + delta >= ToulBar2::divBound ? MIN_COST : getUb());
         }
-        cout << " cId=" << cId << endl;
-        cout << vc << endl;
+        //cout << " cId=" << cId << endl;
+        //cout << vc << endl;
         postIncrementalUnaryConstraint(cId, vc);
     }
 }
@@ -1268,6 +1268,154 @@ void WCSP::addMDDConstraint(Mdd mdd, int relaxed)
     }
     if (debug)
         cout << "Relaxed constraint added" << endl;
+}
+
+void WCSP::addHMDDConstraint(Mdd mdd, int relaxed)
+{
+    static const bool debug{ false };
+
+    if (debug)
+        cout << "Adding relaxed mdd constraint - hidden decomposition" << endl;
+
+    vector<Variable*> varReverse;
+    for (unsigned v = 0; v < getDivVariables().size(); v++) {
+        varReverse.push_back(getDivVariables()[getDivVariables().size() - v - 1]);
+    }
+
+    unsigned nLayers = varReverse.size();
+    vector<Cost> vc;
+    EnumeratedVariable* ex;
+
+    EnumeratedVariable* c;
+    EnumeratedVariable* h = NULL;
+    EnumeratedVariable* hp = NULL;
+
+    int cId;
+    int hId = -1;
+    int hpId = -1;
+    unsigned source;
+    unsigned target;
+
+    for (unsigned layer = 0; layer < nLayers; layer++) {
+        if (debug)
+            cout << "layer " << layer << endl;
+        ex = (EnumeratedVariable*)varReverse[layer];
+        int xId = ex->wcspIndex; //wcsp index of current divVariable
+
+        hId = divHVarsId[relaxed][xId]; //index of variable h
+        h = (EnumeratedVariable*)getVar(hId);
+        cId = divVarsId[relaxed][xId];
+        c = (EnumeratedVariable*)getVar(cId);
+        vc.clear();
+        //add constraint between hp and c, except on layer 0
+        if (layer == 0) {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                source = val_c / (ToulBar2::divWidth);
+                vc.push_back((source == 0) ? MIN_COST : getUb());
+            }
+            postIncrementalUnaryConstraint(cId, vc);
+        } else {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                source = val_c / (ToulBar2::divWidth);
+                //cout << "source " << source << endl;
+                for (unsigned val_hp = 0; val_hp < hp->getDomainInitSize(); val_hp++) {
+                    //cout << "hp " << val_hp << "-> " << ((val_hp == source) ? MIN_COST : getUb()) << endl;
+                    vc.push_back((val_hp == source) ? MIN_COST : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(cId, hpId, vc);
+        }
+        vc.clear();
+        //add constraint between c and h
+        if (layer != nLayers - 1) {
+            for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+                source = val_c / (ToulBar2::divWidth);
+                target = val_c % (ToulBar2::divWidth);
+                for (unsigned val_h = 0; val_h < h->getDomainInitSize(); val_h++) {
+                    vc.push_back((val_h == target) ? MIN_COST : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(cId, hId, vc);
+        }
+        vc.clear();
+        //Add constraint between c and ex
+        for (unsigned val_c = 0; val_c < c->getDomainInitSize(); val_c++) {
+            source = val_c / (ToulBar2::divWidth);
+            target = val_c % (ToulBar2::divWidth);
+            for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
+                vc.push_back((source < mdd[layer].size() && target < mdd[layer][source].size()) ? mdd[layer][source][target][val_ex] : getUb());
+            }
+        }
+        postIncrementalBinaryConstraint(cId, xId, vc);
+        hp = h;
+        hpId = hId;
+    }
+}
+
+void WCSP::addTMDDConstraint(Mdd mdd, int relaxed)
+{
+    static const bool debug{ false };
+
+    if (debug)
+        cout << "Adding relaxed mdd constraint - ternary decomposition" << endl;
+
+    vector<Variable*> varReverse;
+    for (unsigned v = 0; v < getDivVariables().size(); v++) {
+        varReverse.push_back(getDivVariables()[getDivVariables().size() - v - 1]);
+    }
+
+    unsigned nLayers = varReverse.size();
+    vector<Cost> vc;
+    EnumeratedVariable* ex;
+
+    EnumeratedVariable* h = NULL;
+    EnumeratedVariable* hp = NULL;
+
+    int hId = -1;
+    int hpId = -1;
+
+    for (unsigned layer = 0; layer < nLayers; layer++) {
+        if (debug)
+            cout << "layer " << layer << endl;
+        ex = (EnumeratedVariable*)varReverse[layer];
+        int xId = ex->wcspIndex; //wcsp index of current divVariable
+
+        vc.clear();
+        // Add constraint between hp ex and h (except on extremities)
+        if (layer == 0) { // first position, no hp, only distance 0
+            hId = divHVarsId[relaxed][xId]; //index of variable h
+            h = (EnumeratedVariable*)getVar(hId);
+            for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
+                for (unsigned val_h = 0; val_h < h->getDomainInitSize(); val_h++) {
+                    vc.push_back((val_h < mdd[0][0].size()) ? mdd[0][0][val_h][val_ex] : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(xId, hId, vc);
+        } else if (layer + 1 == nLayers) { // last position, no h
+            for (unsigned val_hp = 0; val_hp < hp->getDomainInitSize(); val_hp++) {
+                for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
+                    vc.push_back((val_hp < mdd[layer].size()) ? mdd[layer][val_hp][0][val_ex] : getUb());
+                }
+            }
+            postIncrementalBinaryConstraint(hpId, xId, vc);
+        } else {
+            hId = divHVarsId[relaxed][xId]; //index of variable h
+            h = (EnumeratedVariable*)getVar(hId);
+            for (unsigned val_hp = 0; val_hp < hp->getDomainInitSize(); val_hp++) {
+                for (unsigned val_ex = 0; val_ex < ex->getDomainInitSize(); val_ex++) {
+                    for (unsigned val_h = 0; val_h < h->getDomainInitSize(); val_h++) {
+                        //cout << "hp " << val_hp << " x " << val_ex << " h " << val_h << "(" << ((val_hp + (val_ex != (unsigned)solution[xId]) == val_h) ? MIN_COST : getUb()) << ")" << endl;
+                        vc.push_back((val_hp < mdd[layer].size() && val_h < mdd[layer][val_hp].size()) ? mdd[layer][val_hp][val_h][val_ex] : getUb());
+                    }
+                }
+            }
+            //cout << "Adding ternary constraint on " << hp->getName() << ", " << ex->getName() << " and " << h->getName() << endl;
+            //cout << vc << endl;
+            postIncrementalTernaryConstraint(hpId, xId, hId, vc);
+        }
+        hp = h;
+        hpId = hId;
+    }
 }
 
 void WCSP::postWSum(int* scopeIndex, int arity, string semantics, Cost baseCost, string comparator, int rightRes)
